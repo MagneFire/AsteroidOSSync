@@ -216,12 +216,10 @@ public class NLService extends NotificationListenerService {
         public void onReceive(Context context, Intent intent) {
             if (intent.getStringExtra("command").equals("refresh")) {
                 Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        StatusBarNotification[] notifs = getActiveNotifications();
-                        for(StatusBarNotification notif : notifs)
-                            onNotificationPosted(notif);                    }
+                handler.postDelayed(() -> {
+                    StatusBarNotification[] notifs = getActiveNotifications();
+                    for(StatusBarNotification notif : notifs)
+                        onNotificationPosted(notif);
                 }, 500);
             }
         }
