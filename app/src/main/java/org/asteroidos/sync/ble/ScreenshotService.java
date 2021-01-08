@@ -48,14 +48,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings({"FieldCanBeLocal", "deprecation"}) // For clarity, we prefer having NOTIFICATION as a top level field
                                                       // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class ScreenshotService implements BleDevice.ReadWriteListener {
+public class ScreenshotService implements BleDevice.ReadWriteListener, IService {
     private static final String NOTIFICATION_CHANNEL_ID = "screenshotservice_channel_id_01";
     private int NOTIFICATION = 2726;
 
@@ -83,6 +82,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener {
         }
     }
 
+    @Override
     public void sync() {
         mDevice.enableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT, contentListener);
 
@@ -94,6 +94,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener {
         mDownloading = false;
     }
 
+    @Override
     public void unsync() {
         mDevice.disableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT);
         try {

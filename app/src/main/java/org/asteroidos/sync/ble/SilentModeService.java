@@ -22,7 +22,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 
-public class SilentModeService implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class SilentModeService implements SharedPreferences.OnSharedPreferenceChangeListener, IService {
 
     public static final String PREFS_NAME = "AppPreferences";
     public static final String PREF_RINGER = "PhoneRingModeOnConnection";
@@ -39,7 +39,9 @@ public class SilentModeService implements SharedPreferences.OnSharedPreferenceCh
         am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
     }
-    public void onConnect() {
+
+    @Override
+    public void sync() {
         notificationPref = prefs.getBoolean(PREF_RINGER, false);
 
         if (notificationPref){
@@ -50,7 +52,8 @@ public class SilentModeService implements SharedPreferences.OnSharedPreferenceCh
         }
     }
 
-    public void onDisconnect(){
+    @Override
+    public void unsync(){
         notificationPref = prefs.getBoolean(PREF_RINGER, false);
         if (notificationPref) {
             int origRingerMode = prefs.getInt(PREF_ORIG_RINGER, AudioManager.RINGER_MODE_NORMAL);

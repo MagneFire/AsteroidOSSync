@@ -44,7 +44,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @SuppressWarnings( "deprecation" ) // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionManager.OnActiveSessionsChangedListener {
+public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionManager.OnActiveSessionsChangedListener,
+        IService {
 
     private static final byte MEDIA_COMMAND_PREVIOUS = 0x0;
     private static final byte MEDIA_COMMAND_NEXT     = 0x1;
@@ -73,6 +74,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
         mSettings = mCtx.getSharedPreferences(PREFS_NAME, 0);
     }
 
+    @Override
     public void sync() {
         mDevice.enableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, commandsListener);
         mCtx.getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, mVolumeChangeObserver);
@@ -86,6 +88,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
         }
     }
 
+    @Override
     public void unsync() {
         mDevice.disableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR);
         mCtx.getContentResolver().unregisterContentObserver(mVolumeChangeObserver);

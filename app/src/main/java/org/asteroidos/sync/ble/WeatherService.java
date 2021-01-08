@@ -37,7 +37,6 @@ import org.osmdroid.config.Configuration;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
-import java.util.UUID;
 
 import github.vatsal.easyweather.Helper.ForecastCallback;
 import github.vatsal.easyweather.WeatherMap;
@@ -45,7 +44,7 @@ import github.vatsal.easyweather.retrofit.models.ForecastResponseModel;
 import github.vatsal.easyweather.retrofit.models.List;
 
 @SuppressWarnings( "deprecation" ) // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class WeatherService implements BleDevice.ReadWriteListener {
+public class WeatherService implements BleDevice.ReadWriteListener, IService {
 
     private static final String owmApiKey = "ffcb5a7ed134aac3d095fa628bc46c65";
 
@@ -83,6 +82,7 @@ public class WeatherService implements BleDevice.ReadWriteListener {
         mLongitude = mSettings.getFloat(PREFS_LONGITUDE, PREFS_LONGITUDE_DEFAULT);
     }
 
+    @Override
     public void sync() {
         updateWeather();
 
@@ -101,6 +101,7 @@ public class WeatherService implements BleDevice.ReadWriteListener {
                 AlarmManager.INTERVAL_HALF_HOUR, alarmPendingIntent);
     }
 
+    @Override
     public void unsync() {
         try {
             mCtx.unregisterReceiver(mSReceiver);

@@ -32,7 +32,7 @@ import org.asteroidos.sync.utils.AsteroidUUIDS;
 import java.util.Objects;
 
 @SuppressWarnings( "deprecation" ) // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class NotificationService implements BleDevice.ReadWriteListener {
+public class NotificationService implements BleDevice.ReadWriteListener, IService {
 
     private Context mCtx;
     private BleDevice mDevice;
@@ -45,6 +45,7 @@ public class NotificationService implements BleDevice.ReadWriteListener {
         mCtx = ctx;
     }
 
+    @Override
     public void sync() {
         mDevice.enableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
 
@@ -58,6 +59,7 @@ public class NotificationService implements BleDevice.ReadWriteListener {
         mCtx.sendBroadcast(i);
     }
 
+    @Override
     public void unsync() {
         mDevice.disableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
         try {

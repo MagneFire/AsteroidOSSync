@@ -113,7 +113,7 @@ public class SynchronizationService extends Service implements BleDevice.StateLi
         mMediaService.unsync();
         mTimeService.unsync();
         mDevice.disconnect();
-        silentModeService.onDisconnect();
+        silentModeService.unsync();
     }
 
     void handleReqBattery() {
@@ -350,7 +350,7 @@ public class SynchronizationService extends Service implements BleDevice.StateLi
             if (mTimeService != null)
                 mTimeService.sync();
             if (silentModeService != null)
-                silentModeService.onConnect();
+                silentModeService.sync();
         } else if (event.didEnter(BleDeviceState.DISCONNECTED)) {
             mState = STATUS_DISCONNECTED;
             updateNotification();
@@ -369,7 +369,7 @@ public class SynchronizationService extends Service implements BleDevice.StateLi
             if (mTimeService != null)
                 mTimeService.unsync();
             if (silentModeService != null)
-                silentModeService.onDisconnect();
+                silentModeService.unsync();
         } else if(event.didEnter(BleDeviceState.CONNECTING)) {
             mState = STATUS_CONNECTING;
             updateNotification();
