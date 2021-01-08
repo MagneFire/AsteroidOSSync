@@ -1,7 +1,9 @@
 package org.asteroidos.sync.ble;
 
 /**
- * Every BLE Service of Sync has to implement the {@link IService} interface.
+ * Every Service of Sync has to implement the {@link IService} interface.
+ * A service is a module that can be loaded ({@link IService#sync()}) after the connection is established and
+ * will get destroyed ({@link IService#unsync()}) when the connection is terminated.
  */
 public interface IService {
 
