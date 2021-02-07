@@ -4,11 +4,13 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
+import android.os.RemoteException;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.Objects;
@@ -18,13 +20,16 @@ import no.nordicsemi.android.ble.BuildConfig;
 import no.nordicsemi.android.ble.data.Data;
 
 public class AsteroidBleManager extends BleManager {
+    SynchronizationService synchronizationService;
+
 
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     private BluetoothGattCharacteristic notificationUpdateCharacteristic;
 
-    public AsteroidBleManager(@NonNull final Context context) {
+    public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
+        synchronizationService = syncService;
     }
 
     @NonNull
@@ -52,10 +57,9 @@ public class AsteroidBleManager extends BleManager {
 
 
     public final void setBatteryLevel(Data data) {
-        System.out.println("DEBUG BATTERY: " + data.getByte(0) + "%");
         BatteryLevelEvent batteryLevelEvent = new BatteryLevelEvent();
         batteryLevelEvent.battery = Objects.requireNonNull(data.getByte(0)).intValue();
-        //TODO Someting
+        synchronizationService.handleBattery(batteryLevelEvent);
     }
 
     public static class BatteryLevelEvent {

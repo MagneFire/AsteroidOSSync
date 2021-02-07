@@ -28,6 +28,7 @@ import org.asteroidos.sync.dataobjects.Notification;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -73,8 +74,8 @@ public class NotificationService implements IBleService {
     }
 
     @Override
-    public final List<UUID> getCharacteristicUUIDs() {
-        return UUIDs;
+    public final HashMap<UUID, Direction> getCharacteristicUUIDs() {
+        return null;
     }
 
     @Override

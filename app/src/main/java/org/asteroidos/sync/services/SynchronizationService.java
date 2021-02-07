@@ -86,6 +86,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private SilentModeService silentModeService;
     private SharedPreferences mPrefs;
     private AsteroidBleManager mBleMngr;
+    public int batteryPercentage = 0;
 
     List<IBleService> bleServices;
 
@@ -243,7 +244,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         }
 
         //TODO setup ble lib
-        mBleMngr = new AsteroidBleManager(getApplicationContext());
+        mBleMngr = new AsteroidBleManager(getApplicationContext(), SynchronizationService.this);
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
@@ -349,6 +350,17 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         editor.apply();
     }
 
+    public void handleBattery(AsteroidBleManager.BatteryLevelEvent battery) {
+        Log.d("Battery", "handleBattery: " + battery.battery + "%");
+        batteryPercentage = battery.battery;
+        try {
+            Message.obtain().replyTo
+                    .send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     static private class SynchronizationHandler extends Handler {
         private SynchronizationService mService;
@@ -369,7 +381,13 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                     mService.handleDisconnect();
                     break;
                 case MSG_REQUEST_BATTERY_LIFE:
-                    //mService.handleReqBattery();
+                    try {
+                        mService.replyTo
+                                .send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, mService.batteryPercentage, 0));
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                    mService.handleUpdate();
                     break;
                 case MSG_SET_DEVICE:
                     mService.handleSetDevice((BluetoothDevice) msg.obj);

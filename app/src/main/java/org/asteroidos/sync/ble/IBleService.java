@@ -1,6 +1,6 @@
 package org.asteroidos.sync.ble;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.UUID;
 
 /**
@@ -8,7 +8,14 @@ import java.util.UUID;
  * and the additional BLE functionality from {@link IBleService}.
  */
 public interface IBleService extends IService {
-    public List<UUID> getCharacteristicUUIDs();
+
+    enum Direction{
+        RX,
+        TX
+    }
+
+    public HashMap<UUID, Direction> getCharacteristicUUIDs();
+
     public UUID getServiceUUID();
 
     /**

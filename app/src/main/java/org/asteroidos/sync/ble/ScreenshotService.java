@@ -42,7 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -234,7 +234,7 @@ public class ScreenshotService implements IBleService {
     }
 
     @Override
-    public List<UUID> getCharacteristicUUIDs() {
+    public HashMap<UUID, Direction> getCharacteristicUUIDs() {
         return null;
     }
 

@@ -19,7 +19,6 @@ package org.asteroidos.sync.ble;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -38,6 +37,7 @@ import org.osmdroid.config.Configuration;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.UUID;
 
 import github.vatsal.easyweather.Helper.ForecastCallback;
@@ -231,7 +231,7 @@ public class WeatherService implements IBleService {
     }
 
     @Override
-    public java.util.List<UUID> getCharacteristicUUIDs() {
+    public HashMap<UUID, Direction> getCharacteristicUUIDs() {
         return null;
     }
 

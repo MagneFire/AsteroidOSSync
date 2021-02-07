@@ -19,10 +19,8 @@ package org.asteroidos.sync.ble;
 
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
-import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
@@ -33,14 +31,12 @@ import androidx.annotation.NonNull;
 import android.os.Handler;
 import android.util.Log;
 
-import com.maxmpz.poweramp.player.PowerampAPI;
-import com.maxmpz.poweramp.player.PowerampAPIHelper;
-
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -307,7 +303,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
     }
 
     @Override
-    public List<UUID> getCharacteristicUUIDs() {
+    public HashMap<UUID, Direction> getCharacteristicUUIDs() {
         return null;
     }
 

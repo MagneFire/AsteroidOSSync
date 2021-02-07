@@ -26,12 +26,15 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.util.ArraySet;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.Calendar;
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class TimeService implements IBleService, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -114,8 +117,10 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     }
 
     @Override
-    public List<UUID> getCharacteristicUUIDs() {
-        return null;
+    public HashMap<UUID, Direction> getCharacteristicUUIDs() {
+        HashMap<UUID, Direction> map = new HashMap<>();
+        map.put(AsteroidUUIDS.TIME_SET_CHAR, Direction.TX);
+        return map;
     }
 
     @Override
