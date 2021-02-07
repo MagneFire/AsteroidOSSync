@@ -41,14 +41,15 @@ import androidx.core.app.NotificationCompat;
 
 import org.asteroidos.sync.MainActivity;
 import org.asteroidos.sync.R;
+import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.ble.IBleService;
 import org.asteroidos.sync.ble.IService;
 import org.asteroidos.sync.ble.NotificationService;
 import org.asteroidos.sync.ble.SilentModeService;
 import org.asteroidos.sync.ble.TimeService;
-import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,7 +71,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public static final int STATUS_CONNECTING = 3;
 
     private static final String NOTIFICATION_CHANNEL_ID = "synchronizationservice_channel_id_01";
-    public static BluetoothDevice mDevice;
+    public BluetoothDevice mDevice;
     final Messenger mMessenger = new Messenger(new SynchronizationHandler(this));
     public BluetoothGatt gatt;
     private NotificationManager mNM;
@@ -84,36 +85,33 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private TimeService mTimeService;
     private SilentModeService silentModeService;
     private SharedPreferences mPrefs;
+    private AsteroidBleManager mBleMngr;
 
-    private List<IBleService> bleServices;
+    List<IBleService> bleServices;
 
     final void handleConnect() {
-        //if (mBleMngr == null) return;
+        if (mBleMngr == null) return;
         if (mState == STATUS_CONNECTED || mState == STATUS_CONNECTING) return;
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
         String defaultLocalName = mPrefs.getString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
         BluetoothDevice device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
-        //mBleMngr.setConnectionObserver(this);
+        mBleMngr.setConnectionObserver(this);
         device.createBond();
-        /*
         mBleMngr.connect(device)
                 .timeout(100000)
                 .retry(3, 200)
                 .done(device1 -> {
                     Log.d("BLE Connect", "Connected to " + device1.getName());
-                    mWeatherService = new WeatherService(getApplicationContext(), device1);
-                    mDevice = device1;
 
                 })
                 .fail((device2, error) -> {
-                    Log.e("BLE Connect", "Failed to connect to " + device.getName()
+                    Log.e("BLE Connect", "Failed to connect to " + device.getName() +
                             " with error code: " + error);
                 })
                 .enqueue();
 
-         */
         mNotificationService = new NotificationService(getApplicationContext(), this);
          /*mWeatherService = new WeatherService(getApplicationContext(), mDevice);
          mNotificationService = new NotificationService(getApplicationContext(), mDevice);
@@ -121,23 +119,23 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
          mTimeService = new TimeService(getApplicationContext(), mDevice);*/
         silentModeService = new SilentModeService(getApplicationContext());
 
-        //mDevice.connect();
     }
 
-    void handleDisconnect() {
-        //if (mBleMngr == null) return;
+    final void handleDisconnect() {
+        if (mBleMngr == null) return;
         if (mState == STATUS_DISCONNECTED) return;
         for (IBleService service : bleServices){
             service.unsync();
         }
-        //mBleMngr.abort();
-        //mBleMngr.disconnect().enqueue();
+        mBleMngr.abort();
+        mBleMngr.disconnect().enqueue();
 
         silentModeService.unsync();
     }
 
-    void handleSetDevice(BluetoothDevice device) {
+    final void handleSetDevice(BluetoothDevice device) {
         SharedPreferences.Editor editor = mPrefs.edit();
+        Log.d("TAG", "handleSetDevice: " + device.toString());
         editor.putString(MainActivity.PREFS_DEFAULT_MAC_ADDR, device.getAddress());
         mDevice = device;
         String name = mDevice.getName();
@@ -153,7 +151,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
 
-    void handleUpdate() {
+    final void handleUpdate() {
         if (mDevice != null) {
             try {
                 replyTo.send(Message.obtain(null, MSG_SET_STATUS, mState, 0));
@@ -173,13 +171,14 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public void registerBleService(IBleService service) {
-        bleServices.add(service);
-        Log.d("SyncService", "BLE Service registered: " + service.getServiceUUID());
+    public final void registerBleService(IBleService service) {
+        Log.d("BLE", "registerBleService: " + service.getServiceUUID().toString());
+        boolean success = bleServices.add(service);
+        Log.d("SyncService", "BLE Service registered: " + success + service.getServiceUUID());
     }
 
     @Override
-    public void unregisterBleService(UUID serviceUUID) {
+    public final void unregisterBleService(UUID serviceUUID) {
         for (IBleService service : bleServices){
             if (service.getServiceUUID().equals(serviceUUID)){
                 bleServices.remove(service);
@@ -232,6 +231,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
     @Override
     public void onCreate() {
+        bleServices = new ArrayList<>();
         mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -243,11 +243,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         }
 
         //TODO setup ble lib
-        //mBleMngr = new AsteroidBleManager(getApplicationContext());
+        mBleMngr = new AsteroidBleManager(getApplicationContext());
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
         String defaultLocalName = mPrefs.getString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
+
 
         if (!defaultDevMacAddr.isEmpty()) {
             /*
@@ -256,13 +257,14 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
             mDevice = mBleMngr.getDevice(defaultDevMacAddr);
             mDevice.setListener_State(SynchronizationService.this);
-            */
+
+
+             */
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
             /*
 
 
             mWeatherService = new WeatherService(getApplicationContext(), mDevice);
-            mNotificationService = new NotificationService(getApplicationContext(), mDevice);
             mMediaService = new MediaService(getApplicationContext(), mDevice);
             mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
             mTimeService = new TimeService(getApplicationContext(), mDevice);
@@ -270,7 +272,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
 
              */
-            //mBleMngr.connect(mDevice);
+            mNotificationService = new NotificationService(getApplicationContext(), this);
         }
 
         updateNotification();
@@ -315,7 +317,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public void onDestroy() {
         if (mDevice != null)
             mDevice = null;
-        //mBleMngr.disconnect();
+        mBleMngr.disconnect();
 
         mNM.cancel(NOTIFICATION);
     }
@@ -338,7 +340,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
             for (IBleService service : bleServices){
                 service.unsync();
             }
-            //mBleMngr.disconnect().enqueue();
+            mBleMngr.disconnect().enqueue();
         }
         mDevice = null;
         editor.putString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
@@ -370,7 +372,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                     //mService.handleReqBattery();
                     break;
                 case MSG_SET_DEVICE:
-                    mService.handleSetDevice(mDevice);
+                    mService.handleSetDevice((BluetoothDevice) msg.obj);
                     break;
                 case MSG_UPDATE:
                     mService.handleUpdate();

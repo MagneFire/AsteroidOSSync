@@ -21,13 +21,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.util.Log;
 
 import org.asteroidos.sync.NotificationPreferences;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.dataobjects.Notification;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,14 +36,15 @@ public class NotificationService implements IBleService {
 
     private Context mCtx;
     private IAsteroidDevice mDevice;
-    List<UUID> UUIDs;
+    List<UUID> UUIDs = new ArrayList<>();
 
     private NotificationReceiver mNReceiver;
 
     public NotificationService(Context ctx, IAsteroidDevice device) {
         this.mDevice = device;
         this.mCtx = ctx;
-        mDevice.registerBleService(this);
+        device.registerBleService(this);
+
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR);
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
