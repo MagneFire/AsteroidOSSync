@@ -17,29 +17,24 @@
 
 package org.asteroidos.sync.ble;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-import androidx.core.app.NotificationCompat;
-import androidx.core.content.FileProvider;
 import android.provider.MediaStore;
 import android.util.Log;
 
-import com.idevicesinc.sweetblue.BleDevice;
+import androidx.core.content.FileProvider;
 
-import org.asteroidos.sync.R;
+import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.io.File;
@@ -47,19 +42,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
-@SuppressWarnings({"FieldCanBeLocal", "deprecation"}) // For clarity, we prefer having NOTIFICATION as a top level field
-                                                      // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class ScreenshotService implements BleDevice.ReadWriteListener, IService {
+@SuppressWarnings({"FieldCanBeLocal"}) // For clarity, we prefer having NOTIFICATION as a top level field
+public class ScreenshotService implements IBleService {
     private static final String NOTIFICATION_CHANNEL_ID = "screenshotservice_channel_id_01";
     private int NOTIFICATION = 2726;
 
     private Context mCtx;
-    private BleDevice mDevice;
+    private IAsteroidDevice mDevice;
 
     private ScreenshotReqReceiver mSReceiver;
 
@@ -68,7 +61,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
 
     private NotificationManager mNM;
 
-    public ScreenshotService(Context ctx, BleDevice device)
+    public ScreenshotService(Context ctx, IAsteroidDevice device)
     {
         mDevice = device;
         mCtx = ctx;
@@ -84,7 +77,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
 
     @Override
     public void sync() {
-        mDevice.enableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT, contentListener);
+        //mDevice.enableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT, contentListener);
 
         mSReceiver = new ScreenshotReqReceiver();
         IntentFilter filter = new IntentFilter();
@@ -96,7 +89,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
 
     @Override
     public void unsync() {
-        mDevice.disableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT);
+        //mDevice.disableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT);
         try {
             mCtx.unregisterReceiver(mSReceiver);
         } catch (IllegalArgumentException ignored) {}
@@ -111,6 +104,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
         return result;
     }
 
+    /*
     private BleDevice.ReadWriteListener contentListener = new BleDevice.ReadWriteListener() {
         private int progress = 0;
         private int size = 0;
@@ -181,11 +175,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
         }
     };
 
-    @Override
-    public void onEvent(ReadWriteEvent e) {
-        if(!e.wasSuccess())
-            Log.e("ScreenshotService", e.status().toString());
-    }
+     */
 
     private Uri createFile(byte[] totalData) throws IOException {
         String dirStr = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/AsteroidOSSync";
@@ -243,6 +233,21 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
                 });
     }
 
+    @Override
+    public List<UUID> getCharacteristicUUIDs() {
+        return null;
+    }
+
+    @Override
+    public UUID getServiceUUID() {
+        return null;
+    }
+
+    @Override
+    public Boolean onBleReceive(UUID uuid, byte[] data) {
+        return null;
+    }
+
     class ScreenshotReqReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -251,7 +256,7 @@ public class ScreenshotService implements BleDevice.ReadWriteListener, IService 
                 mDownloading = true;
                 byte[] data = new byte[1];
                 data[0] = 0x0;
-                mDevice.write(AsteroidUUIDS.SCREENSHOT_REQUEST, data, ScreenshotService.this);
+                mDevice.sendToDevice(AsteroidUUIDS.SCREENSHOT_REQUEST, data, ScreenshotService.this);
             }
         }
     }

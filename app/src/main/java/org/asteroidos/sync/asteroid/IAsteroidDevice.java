@@ -1,16 +1,17 @@
 package org.asteroidos.sync.asteroid;
 
 import org.asteroidos.sync.ble.IBleService;
+import org.asteroidos.sync.ble.IService;
 
 import java.util.UUID;
 
 public interface IAsteroidDevice {
-    public String name = "";
-    public String macAddress = "";
-    public int batteryPercentage = 0;
-    public boolean bonded = false;
+    String name = "";
+    String macAddress = "";
+    int batteryPercentage = 0;
+    boolean bonded = false;
 
-    public enum ConnectionState {
+    enum ConnectionState {
         STATUS_CONNECTED,
         STATUS_CONNECTING,
         STATUS_DISCONNECTED
@@ -30,8 +31,12 @@ public interface IAsteroidDevice {
      *
      * @return Current state of the {@link IAsteroidDevice} connection.
      */
-    public ConnectionState getConnectionState();
+    ConnectionState getConnectionState();
 
-    public void sendToDevice(UUID characteristic, byte[] data, IBleService service);
+    void sendToDevice(UUID characteristic, byte[] data, IBleService service);
 
+    void registerBleService(IBleService service);
+    void unregisterBleService(UUID serviceUUID);
+
+    IService getServiceByUUID(UUID uuid);
 }

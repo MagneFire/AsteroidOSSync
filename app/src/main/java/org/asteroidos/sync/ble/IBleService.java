@@ -1,5 +1,6 @@
 package org.asteroidos.sync.ble;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -7,6 +8,8 @@ import java.util.UUID;
  * and the additional BLE functionality from {@link IBleService}.
  */
 public interface IBleService extends IService {
+    public List<UUID> getCharacteristicUUIDs();
+    public UUID getServiceUUID();
 
     /**
      * <code>onBleReceive()</code> is called before a service is destroyed

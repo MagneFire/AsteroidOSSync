@@ -33,19 +33,18 @@ import androidx.annotation.NonNull;
 import android.os.Handler;
 import android.util.Log;
 
-import com.idevicesinc.sweetblue.BleDevice;
 import com.maxmpz.poweramp.player.PowerampAPI;
 import com.maxmpz.poweramp.player.PowerampAPIHelper;
 
+import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
-@SuppressWarnings( "deprecation" ) // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionManager.OnActiveSessionsChangedListener,
-        IService {
+public class MediaService implements IBleService,  MediaSessionManager.OnActiveSessionsChangedListener {
 
     private static final byte MEDIA_COMMAND_PREVIOUS = 0x0;
     private static final byte MEDIA_COMMAND_NEXT     = 0x1;
@@ -58,7 +57,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
     public static final String PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT = "default";
 
     private Context mCtx;
-    private BleDevice mDevice;
+    private IAsteroidDevice mDevice;
     private SharedPreferences mSettings;
 
     private MediaController mMediaController = null;
@@ -66,7 +65,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
 
     private int mVolume;
 
-    public MediaService(Context ctx, BleDevice device)
+    public MediaService(Context ctx, IAsteroidDevice device)
     {
         mDevice = device;
         mCtx = ctx;
@@ -76,7 +75,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
 
     @Override
     public void sync() {
-        mDevice.enableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, commandsListener);
+        //mDevice.enableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, commandsListener);
         mCtx.getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, mVolumeChangeObserver);
         try {
             mMediaSessionManager = (MediaSessionManager) mCtx.getSystemService(Context.MEDIA_SESSION_SERVICE);
@@ -90,7 +89,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
 
     @Override
     public void unsync() {
-        mDevice.disableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR);
+        //mDevice.disableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR);
         mCtx.getContentResolver().unregisterContentObserver(mVolumeChangeObserver);
 
         if(mMediaSessionManager != null)
@@ -120,12 +119,13 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
 
                     byte[] data = new byte[1];
                     data[0] = (byte) mVolume;
-                    mDevice.write(AsteroidUUIDS.MEDIA_VOLUME_CHAR, data, MediaService.this);
+                    mDevice.sendToDevice(AsteroidUUIDS.MEDIA_VOLUME_CHAR, data, MediaService.this);
                 }
             }
         }
     };
 
+    /*
     private BleDevice.ReadWriteListener commandsListener = new BleDevice.ReadWriteListener() {
         @Override
         public void onEvent(ReadWriteEvent e) {
@@ -202,11 +202,8 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
         }
     };
 
-    @Override
-    public void onEvent(ReadWriteEvent e) {
-        if(!e.wasSuccess())
-            Log.e("MediaService", e.status().toString());
-    }
+
+     */
 
     /**
      * Callback for the MediaController.
@@ -247,15 +244,15 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
             super.onMetadataChanged(metadata);
 
             if (metadata != null) {
-                mDevice.write(AsteroidUUIDS.MEDIA_ARTIST_CHAR,
+                mDevice.sendToDevice(AsteroidUUIDS.MEDIA_ARTIST_CHAR,
                         getTextAsBytes(metadata, MediaMetadata.METADATA_KEY_ARTIST),
                         MediaService.this);
 
-                mDevice.write(AsteroidUUIDS.MEDIA_ALBUM_CHAR,
+                mDevice.sendToDevice(AsteroidUUIDS.MEDIA_ALBUM_CHAR,
                         getTextAsBytes(metadata, MediaMetadata.METADATA_KEY_ALBUM),
                         MediaService.this);
 
-                mDevice.write(AsteroidUUIDS.MEDIA_TITLE_CHAR,
+                mDevice.sendToDevice(AsteroidUUIDS.MEDIA_TITLE_CHAR,
                         getTextAsBytes(metadata, MediaMetadata.METADATA_KEY_TITLE),
                         MediaService.this);
             }
@@ -266,7 +263,7 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
             super.onPlaybackStateChanged(state);
             byte[] data = new byte[1];
             data[0] = (byte)(state.getState() == PlaybackState.STATE_PLAYING ?  1 : 0);
-            mDevice.write(AsteroidUUIDS.MEDIA_PLAYING_CHAR, data, MediaService.this);
+            mDevice.sendToDevice(AsteroidUUIDS.MEDIA_PLAYING_CHAR, data, MediaService.this);
         }
 
         @Override
@@ -303,9 +300,24 @@ public class MediaService implements BleDevice.ReadWriteListener,  MediaSessionM
             }
         } else {
             byte[] data = new byte[]{0};
-            mDevice.write(AsteroidUUIDS.MEDIA_ARTIST_CHAR, data, MediaService.this);
-            mDevice.write(AsteroidUUIDS.MEDIA_ALBUM_CHAR, data, MediaService.this);
-            mDevice.write(AsteroidUUIDS.MEDIA_TITLE_CHAR, data, MediaService.this);
+            mDevice.sendToDevice(AsteroidUUIDS.MEDIA_ARTIST_CHAR, data, MediaService.this);
+            mDevice.sendToDevice(AsteroidUUIDS.MEDIA_ALBUM_CHAR, data, MediaService.this);
+            mDevice.sendToDevice(AsteroidUUIDS.MEDIA_TITLE_CHAR, data, MediaService.this);
         }
+    }
+
+    @Override
+    public List<UUID> getCharacteristicUUIDs() {
+        return null;
+    }
+
+    @Override
+    public UUID getServiceUUID() {
+        return null;
+    }
+
+    @Override
+    public Boolean onBleReceive(UUID uuid, byte[] data) {
+        return null;
     }
 }

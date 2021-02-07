@@ -23,32 +23,35 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import com.idevicesinc.sweetblue.BleDevice;
-
 import org.asteroidos.sync.NotificationPreferences;
+import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.dataobjects.Notification;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-@SuppressWarnings( "deprecation" ) // Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated ReadWriteListener
-public class NotificationService implements BleDevice.ReadWriteListener, IService {
+public class NotificationService implements IBleService {
 
     private Context mCtx;
-    private BleDevice mDevice;
+    private IAsteroidDevice mDevice;
+    List<UUID> UUIDs;
 
     private NotificationReceiver mNReceiver;
 
-    public NotificationService(Context ctx, BleDevice device)
-    {
-        mDevice = device;
-        mCtx = ctx;
+    public NotificationService(Context ctx, IAsteroidDevice device) {
+        this.mDevice = device;
+        this.mCtx = ctx;
+        mDevice.registerBleService(this);
+        UUIDs.add(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
+        UUIDs.add(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR);
+        UUIDs.add(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
     }
 
     @Override
     public void sync() {
-        mDevice.enableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
+        //mDevice.enableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
 
         mNReceiver = new NotificationReceiver();
         IntentFilter filter = new IntentFilter();
@@ -62,16 +65,25 @@ public class NotificationService implements BleDevice.ReadWriteListener, IServic
 
     @Override
     public void unsync() {
-        mDevice.disableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
+        //mDevice.disableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
         try {
             mCtx.unregisterReceiver(mNReceiver);
         } catch (IllegalArgumentException ignored) {}
     }
 
     @Override
-    public void onEvent(ReadWriteEvent e) {
-        if(!e.wasSuccess())
-            Log.e("NotificationService", e.status().toString());
+    public final List<UUID> getCharacteristicUUIDs() {
+        return UUIDs;
+    }
+
+    @Override
+    public final UUID getServiceUUID() {
+        return AsteroidUUIDS.NOTIFICATION_SERVICE_UUID;
+    }
+
+    @Override
+    public Boolean onBleReceive(UUID uuid, byte[] data) {
+        return null;
     }
 
     class NotificationReceiver extends BroadcastReceiver {
@@ -118,11 +130,11 @@ public class NotificationService implements BleDevice.ReadWriteListener, IServic
                         body,
                         vibration);
 
-                mDevice.write(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR, notification.toBytes(), NotificationService.this);
+                mDevice.sendToDevice(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR, notification.toBytes(), NotificationService.this);
             } else if (Objects.equals(event, "removed")) {
                 int id = intent.getIntExtra("id", 0);
 
-                mDevice.write(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR, new Notification(Notification.MsgType.REMOVED, id).toBytes(), NotificationService.this);
+                mDevice.sendToDevice(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR, new Notification(Notification.MsgType.REMOVED, id).toBytes(), NotificationService.this);
             }
         }
     }
