@@ -3,6 +3,7 @@ package org.asteroidos.sync.asteroid;
 import org.asteroidos.sync.ble.IBleService;
 import org.asteroidos.sync.ble.IService;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface IAsteroidDevice {
@@ -38,5 +39,6 @@ public interface IAsteroidDevice {
     void registerBleService(IBleService service);
     void unregisterBleService(UUID serviceUUID);
 
-    IService getServiceByUUID(UUID uuid);
+    IBleService getServiceByUUID(UUID uuid);
+    List<IBleService> getServices();
 }

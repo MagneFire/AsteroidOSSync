@@ -10,10 +10,15 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.asteroidos.sync.ble.IBleService;
 import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.BuildConfig;
@@ -26,6 +31,7 @@ public class AsteroidBleManager extends BleManager {
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     private BluetoothGattCharacteristic notificationUpdateCharacteristic;
+    List<BluetoothGattService> gattServices;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
@@ -62,6 +68,11 @@ public class AsteroidBleManager extends BleManager {
         synchronizationService.handleBattery(batteryLevelEvent);
     }
 
+    public final void informService(UUID uuid, byte[] data){
+        synchronizationService.getServiceByUUID(uuid).onBleReceive(uuid, data);
+
+    }
+
     public static class BatteryLevelEvent {
         public int battery = 0;
     }
@@ -84,6 +95,20 @@ public class AsteroidBleManager extends BleManager {
                     notify = (properties & BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0;
                 }
             }
+
+            for (IBleService service : synchronizationService.getServices()){
+
+                BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
+                HashMap<UUID, IBleService.Direction> characteristics = service.getCharacteristicUUIDs();
+
+                characteristics.forEach((uuid, direction) -> {
+                    BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
+                    bluetoothGattService.addCharacteristic(characteristic);
+                });
+
+                gattServices.add(bluetoothGattService);
+            }
+
             supported = (batteryCharacteristic != null && notify);
 
             if (notificationService != null) {

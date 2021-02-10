@@ -44,7 +44,6 @@ import org.asteroidos.sync.R;
 import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.ble.IBleService;
-import org.asteroidos.sync.ble.IService;
 import org.asteroidos.sync.ble.NotificationService;
 import org.asteroidos.sync.ble.SilentModeService;
 import org.asteroidos.sync.ble.TimeService;
@@ -52,6 +51,7 @@ import org.asteroidos.sync.ble.TimeService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import no.nordicsemi.android.ble.observer.ConnectionObserver;
 
@@ -190,13 +190,26 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public IService getServiceByUUID(UUID uuid) {
+    public final IBleService getServiceByUUID(UUID uuid) {
         for (IBleService service : bleServices){
             if (service.getServiceUUID().equals(uuid)){
                 return service;
+            } else {
+                AtomicBoolean isService = new AtomicBoolean(false);
+                service.getCharacteristicUUIDs().forEach((uuid1, direction) -> {
+                    if (uuid1.equals(uuid)) {
+                        isService.set(true);
+                    }});
+                if (isService.get())
+                    return service;
             }
         }
         return null;
+    }
+
+    @Override
+    public final List<IBleService> getServices(){
+        return bleServices;
     }
 
     @Override
