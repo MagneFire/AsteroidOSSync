@@ -169,7 +169,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
     @Override
     public void sendToDevice(UUID characteristic, byte[] data, IBleService service) {
-
+        mBleMngr.send(characteristic, data);
     }
 
     @Override

@@ -33,14 +33,23 @@ public class AsteroidBleManager extends BleManager {
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     private BluetoothGattCharacteristic notificationUpdateCharacteristic;
+    HashMap<BluetoothGattCharacteristic, IBleService.Direction> gattChars;
     ArrayList<BluetoothGattService> gattServices;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
         synchronizationService = syncService;
         gattServices = new ArrayList<>();
+        gattChars = new HashMap<>();
     }
 
+    public void send(UUID characteristic, byte[] data) {
+        gattChars.forEach((service, direction) -> {
+            if (service.getUuid().equals(characteristic)) {
+                writeCharacteristic(service, data).enqueue();
+            }
+        });
+    }
     @NonNull
     @Override
     protected final BleManagerGattCallback getGattCallback() {
@@ -99,8 +108,6 @@ public class AsteroidBleManager extends BleManager {
                 }
             }
 
-            Log.d(TAG, "REF " + synchronizationService.getServices());
-
             for (IBleService service : synchronizationService.getServices()){
 
                 BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
@@ -115,6 +122,7 @@ public class AsteroidBleManager extends BleManager {
 
                 characteristics.forEach((uuid, direction) -> {
                     BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
+                    gattChars.put(characteristic, direction);
                     bluetoothGattService.addCharacteristic(characteristic);
                 });
 
@@ -152,6 +160,17 @@ public class AsteroidBleManager extends BleManager {
             setNotificationCallback(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data)));
             readCharacteristic(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data))).enqueue();
             enableNotifications(batteryCharacteristic).enqueue();
+
+            /*gattChars.forEach((service, direction) -> {
+                if (direction == IBleService.Direction.RX) {
+
+                } else if (direction == IBleService.Direction.TX) {
+
+                }
+            });*/
+
+            gattServices.forEach((service) -> {
+            });
 
         }
 
