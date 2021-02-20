@@ -52,13 +52,10 @@ public class NotificationService implements IBleService {
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR);
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
-        // HACKY, only used to enable the notification receiver.
-        sync();
     }
 
     @Override
     public void sync() {
-        Log.d(TAG, "NOTIFICATION ENABLE!!!");
         //mDevice.enableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
 
         mNReceiver = new NotificationReceiver();

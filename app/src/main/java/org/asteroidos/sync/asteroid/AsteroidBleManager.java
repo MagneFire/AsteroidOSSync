@@ -108,7 +108,7 @@ public class AsteroidBleManager extends BleManager {
                 }
             }
 
-            for (IBleService service : synchronizationService.getServices()){
+            for (IBleService service : synchronizationService.getServices()) {
 
                 BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
                 HashMap<UUID, IBleService.Direction> characteristics = service.getCharacteristicUUIDs();
@@ -171,12 +171,14 @@ public class AsteroidBleManager extends BleManager {
 
             gattServices.forEach((service) -> {
             });
-
+            // Let all services now that we are connected.
+            synchronizationService.getServices().forEach((IBleService::sync));
         }
 
         @Override
         protected final void onDeviceDisconnected() {
             batteryCharacteristic = null;
+            synchronizationService.getServices().forEach((IBleService::unsync));
         }
 
     }
