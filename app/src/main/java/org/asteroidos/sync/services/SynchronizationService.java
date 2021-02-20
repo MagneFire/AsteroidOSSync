@@ -57,6 +57,7 @@ import no.nordicsemi.android.ble.observer.ConnectionObserver;
 
 
 public class SynchronizationService extends Service implements IAsteroidDevice, ConnectionObserver {
+    public static final String TAG = SynchronizationService.class.toString();
     public static final int MSG_CONNECT = 1;
     public static final int MSG_DISCONNECT = 2;
     public static final int MSG_SET_LOCAL_NAME = 3;
@@ -104,16 +105,16 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                 .timeout(100000)
                 .retry(3, 200)
                 .done(device1 -> {
-                    Log.d("BLE Connect", "Connected to " + device1.getName());
+                    Log.d(TAG, "Connected to " + device1.getName());
 
                 })
                 .fail((device2, error) -> {
-                    Log.e("BLE Connect", "Failed to connect to " + device.getName() +
+                    Log.e(TAG, "Failed to connect to " + device.getName() +
                             " with error code: " + error);
                 })
                 .enqueue();
 
-        mNotificationService = new NotificationService(getApplicationContext(), this);
+        //mNotificationService = new NotificationService(getApplicationContext(), this);
          /*mWeatherService = new WeatherService(getApplicationContext(), mDevice);
          mNotificationService = new NotificationService(getApplicationContext(), mDevice);
          mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
@@ -136,7 +137,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
     final void handleSetDevice(BluetoothDevice device) {
         SharedPreferences.Editor editor = mPrefs.edit();
-        Log.d("TAG", "handleSetDevice: " + device.toString());
+        Log.d(TAG, "handleSetDevice: " + device.toString());
         editor.putString(MainActivity.PREFS_DEFAULT_MAC_ADDR, device.getAddress());
         mDevice = device;
         String name = mDevice.getName();
@@ -173,9 +174,9 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
     @Override
     public final void registerBleService(IBleService service) {
-        Log.d("BLE", "registerBleService: " + service.getServiceUUID().toString());
+        Log.d(TAG, "registerBleService: " + service.getServiceUUID().toString());
         boolean success = bleServices.add(service);
-        Log.d("SyncService", "BLE Service registered: " + success + service.getServiceUUID());
+        Log.d(TAG, "BLE Service registered: " + success + service.getServiceUUID());
     }
 
     @Override
@@ -183,7 +184,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         for (IBleService service : bleServices){
             if (service.getServiceUUID().equals(serviceUUID)){
                 bleServices.remove(service);
-                Log.d("SyncService", "BLE Service unregistered: " + service.getServiceUUID());
+                Log.d(TAG, "BLE Service unregistered: " + service.getServiceUUID());
             }
         }
 
@@ -364,14 +365,13 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     public void handleBattery(AsteroidBleManager.BatteryLevelEvent battery) {
-        Log.d("Battery", "handleBattery: " + battery.battery + "%");
+        Log.d(TAG, "handleBattery: " + battery.battery + "%");
         batteryPercentage = battery.battery;
-        try {
-            Message.obtain().replyTo
-                    .send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
+        /*try {
+            Message.obtain().replyTo.send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
         } catch (RemoteException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
 

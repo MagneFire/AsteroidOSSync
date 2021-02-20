@@ -14,6 +14,7 @@ import org.asteroidos.sync.ble.IBleService;
 import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -26,16 +27,18 @@ import no.nordicsemi.android.ble.data.Data;
 
 public class AsteroidBleManager extends BleManager {
     SynchronizationService synchronizationService;
+    public static final String TAG = AsteroidBleManager.class.toString();
 
 
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     private BluetoothGattCharacteristic notificationUpdateCharacteristic;
-    List<BluetoothGattService> gattServices;
+    ArrayList<BluetoothGattService> gattServices;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
         synchronizationService = syncService;
+        gattServices = new ArrayList<>();
     }
 
     @NonNull
@@ -96,10 +99,19 @@ public class AsteroidBleManager extends BleManager {
                 }
             }
 
+            Log.d(TAG, "REF " + synchronizationService.getServices());
+
             for (IBleService service : synchronizationService.getServices()){
 
                 BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
                 HashMap<UUID, IBleService.Direction> characteristics = service.getCharacteristicUUIDs();
+
+                if (characteristics == null)  {
+                    Log.d(TAG, "CHAR NULL! " + characteristics + " " + service.getServiceUUID());
+                    continue;
+                } else {
+                    Log.d(TAG, "CHAR " + characteristics + " " + service.getServiceUUID());
+                }
 
                 characteristics.forEach((uuid, direction) -> {
                     BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
@@ -116,15 +128,16 @@ public class AsteroidBleManager extends BleManager {
 
             }
             supported &= (notificationUpdateCharacteristic != null && notify);
+            Log.d(TAG, "FOUND? " + supported);
 
             // Return true if all required services have been found
             return supported;
         }
 
-        @Override
+        /*@Override
         protected final boolean isOptionalServiceSupported(@NonNull final BluetoothGatt gatt) {
             return super.isOptionalServiceSupported(gatt);
-        }
+        }*/
 
         @Override
         protected final void initialize() {
@@ -137,7 +150,7 @@ public class AsteroidBleManager extends BleManager {
                     .enqueue();
 
             setNotificationCallback(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data)));
-            readCharacteristic(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data)));
+            readCharacteristic(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data))).enqueue();
             enableNotifications(batteryCharacteristic).enqueue();
 
         }

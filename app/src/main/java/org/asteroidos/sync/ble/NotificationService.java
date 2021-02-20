@@ -75,7 +75,10 @@ public class NotificationService implements IBleService {
 
     @Override
     public final HashMap<UUID, Direction> getCharacteristicUUIDs() {
-        return null;
+        HashMap<UUID, Direction> chars = new HashMap<>();
+        chars.put(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR, Direction.RX);
+        return chars;
     }
 
     @Override
