@@ -36,6 +36,7 @@ import org.asteroidos.sync.utils.AsteroidUUIDS;
 import org.osmdroid.config.Configuration;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.UUID;
@@ -60,6 +61,8 @@ public class WeatherService implements IBleService {
     public static final boolean PREFS_SYNC_WEATHER_DEFAULT = false;
     public static final String WEATHER_SYNC_INTENT = "org.asteroidos.sync.WEATHER_SYNC_REQUEST_LISTENER";
 
+    java.util.List<UUID> UUIDs = new ArrayList<>();
+
     private IAsteroidDevice mDevice;
     private Context mCtx;
     private SharedPreferences mSettings;
@@ -75,6 +78,12 @@ public class WeatherService implements IBleService {
     public WeatherService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
+        device.registerBleService(this);
+        UUIDs.add(AsteroidUUIDS.WEATHER_SERVICE_UUID);
+        UUIDs.add(AsteroidUUIDS.WEATHER_CITY_CHAR);
+        UUIDs.add(AsteroidUUIDS.WEATHER_IDS_CHAR);
+        UUIDs.add(AsteroidUUIDS.WEATHER_MIN_TEMPS_CHAR);
+        UUIDs.add(AsteroidUUIDS.WEATHER_MAX_TEMPS_CHAR);
 
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
 
@@ -232,12 +241,17 @@ public class WeatherService implements IBleService {
 
     @Override
     public HashMap<UUID, Direction> getCharacteristicUUIDs() {
-        return null;
+        HashMap<UUID, Direction> chars = new HashMap<>();
+        chars.put(AsteroidUUIDS.WEATHER_CITY_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.WEATHER_IDS_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.WEATHER_MIN_TEMPS_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.WEATHER_MAX_TEMPS_CHAR, Direction.TX);
+        return chars;
     }
 
     @Override
     public UUID getServiceUUID() {
-        return null;
+        return AsteroidUUIDS.WEATHER_SERVICE_UUID;
     }
 
     @Override

@@ -45,8 +45,10 @@ import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.ble.IBleService;
 import org.asteroidos.sync.ble.NotificationService;
+import org.asteroidos.sync.ble.ScreenshotService;
 import org.asteroidos.sync.ble.SilentModeService;
 import org.asteroidos.sync.ble.TimeService;
+import org.asteroidos.sync.ble.WeatherService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +81,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private int NOTIFICATION = 2725;
     private int mState = STATUS_DISCONNECTED;
     private Messenger replyTo;
-    //private ScreenshotService mScreenshotService;
-    //private WeatherService mWeatherService;
+    private ScreenshotService mScreenshotService;
+    private WeatherService mWeatherService;
     private NotificationService mNotificationService;
     //private MediaService mMediaService;
     private TimeService mTimeService;
@@ -119,6 +121,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
          mNotificationService = new NotificationService(getApplicationContext(), mDevice);
          mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
          mTimeService = new TimeService(getApplicationContext(), mDevice);*/
+        mScreenshotService = new ScreenshotService(getApplicationContext(), this);
         silentModeService = new SilentModeService(getApplicationContext());
 
     }
@@ -278,8 +281,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
             /*
 
-
-            mWeatherService = new WeatherService(getApplicationContext(), mDevice);
             mMediaService = new MediaService(getApplicationContext(), mDevice);
             mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
             mTimeService = new TimeService(getApplicationContext(), mDevice);
@@ -288,6 +289,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
              */
             mNotificationService = new NotificationService(getApplicationContext(), this);
+            mWeatherService = new WeatherService(getApplicationContext(), this);
+            mScreenshotService = new ScreenshotService(getApplicationContext(), this);
         }
 
         updateNotification();

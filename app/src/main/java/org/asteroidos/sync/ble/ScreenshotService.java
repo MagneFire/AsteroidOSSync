@@ -46,6 +46,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
 
+import github.vatsal.easyweather.retrofit.models.Sys;
+
 @SuppressWarnings({"FieldCanBeLocal"}) // For clarity, we prefer having NOTIFICATION as a top level field
 public class ScreenshotService implements IBleService {
     private static final String NOTIFICATION_CHANNEL_ID = "screenshotservice_channel_id_01";
@@ -65,6 +67,8 @@ public class ScreenshotService implements IBleService {
     {
         mDevice = device;
         mCtx = ctx;
+        device.registerBleService(this);
+
         mNM = (NotificationManager) mCtx.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -73,11 +77,12 @@ public class ScreenshotService implements IBleService {
             notificationChannel.setVibrationPattern(new long[]{0L});
             mNM.createNotificationChannel(notificationChannel);
         }
+
+
     }
 
     @Override
     public void sync() {
-        //mDevice.enableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT, contentListener);
 
         mSReceiver = new ScreenshotReqReceiver();
         IntentFilter filter = new IntentFilter();
@@ -89,7 +94,6 @@ public class ScreenshotService implements IBleService {
 
     @Override
     public void unsync() {
-        //mDevice.disableNotify(AsteroidUUIDS.SCREENSHOT_CONTENT);
         try {
             mCtx.unregisterReceiver(mSReceiver);
         } catch (IllegalArgumentException ignored) {}
@@ -235,16 +239,30 @@ public class ScreenshotService implements IBleService {
 
     @Override
     public HashMap<UUID, Direction> getCharacteristicUUIDs() {
-        return null;
+        HashMap<UUID, Direction> chars = new HashMap<>();
+        chars.put(AsteroidUUIDS.SCREENSHOT_REQUEST, Direction.TX);
+        chars.put(AsteroidUUIDS.SCREENSHOT_CONTENT, Direction.RX);
+        return chars;
     }
 
     @Override
     public UUID getServiceUUID() {
-        return null;
+        return AsteroidUUIDS.SCREENSHOT_SERVICE_UUID;
     }
 
     @Override
     public Boolean onBleReceive(UUID uuid, byte[] data) {
+        System.out.println("onBLEREC: " + uuid);
+        if (uuid.equals(AsteroidUUIDS.SCREENSHOT_CONTENT)){
+            System.out.println("STARTING SCREENSHOT DL");
+            Uri fileName = null;
+            try {
+                fileName = createFile(data);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println("URI IS: " + fileName.toString());
+        }
         return null;
     }
 

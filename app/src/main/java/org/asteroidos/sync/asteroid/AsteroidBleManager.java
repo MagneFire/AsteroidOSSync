@@ -94,7 +94,9 @@ public class AsteroidBleManager extends BleManager {
         @Override
         public final boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
             final BluetoothGattService batteryService = gatt.getService(AsteroidUUIDS.BATTERY_SERVICE_UUID);
+            //Replace with dynamic list
             final BluetoothGattService notificationService = gatt.getService(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
+            final BluetoothGattService weatherService = gatt.getService(AsteroidUUIDS.WEATHER_SERVICE_UUID);
 
             boolean supported = true;
 
