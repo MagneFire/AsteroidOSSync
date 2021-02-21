@@ -51,6 +51,7 @@ import org.asteroidos.sync.ble.TimeService;
 import org.asteroidos.sync.ble.WeatherService;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -173,6 +174,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     @Override
     public void sendToDevice(UUID characteristic, byte[] data, IBleService service) {
         mBleMngr.send(characteristic, data);
+        System.out.println(characteristic.toString() + ": " + Arrays.toString(data));
     }
 
     @Override

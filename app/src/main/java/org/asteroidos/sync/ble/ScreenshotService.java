@@ -17,14 +17,17 @@
 
 package org.asteroidos.sync.ble;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
@@ -32,8 +35,10 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.FileProvider;
 
+import org.asteroidos.sync.R;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
@@ -45,6 +50,9 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import github.vatsal.easyweather.retrofit.models.Sys;
 
@@ -60,6 +68,10 @@ public class ScreenshotService implements IBleService {
 
     private boolean mFirstNotify = true;
     private boolean mDownloading = false;
+    private int progress = 0;
+    private int size = 0;
+    private byte[] totalData;
+    private ScheduledExecutorService processUpdate;
 
     private NotificationManager mNM;
 
@@ -107,79 +119,6 @@ public class ScreenshotService implements IBleService {
         }
         return result;
     }
-
-    /*
-    private BleDevice.ReadWriteListener contentListener = new BleDevice.ReadWriteListener() {
-        private int progress = 0;
-        private int size = 0;
-        private byte[] totalData;
-        private ScheduledExecutorService processUpdate;
-
-        @Override
-        public void onEvent(ReadWriteEvent e) {
-            if(e.isNotification() && e.charUuid().equals(AsteroidUUIDS.SCREENSHOT_CONTENT)) {
-                byte[] data = e.data();
-                if(mFirstNotify) {
-                    size = bytesToInt(data);
-                    totalData = new byte[size];
-                    mFirstNotify = false;
-                    progress = 0;
-
-                    processUpdate = Executors.newSingleThreadScheduledExecutor();
-                    processUpdate.scheduleWithFixedDelay(new Runnable() {
-                        @Override
-                        public void run() {
-                            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
-                                    .setContentTitle(mCtx.getText(R.string.screenshot))
-                                    .setLocalOnly(true);
-
-                            notificationBuilder.setContentText(mCtx.getText(R.string.downloading));
-                            notificationBuilder.setSmallIcon(R.drawable.image_white);
-                            notificationBuilder.setProgress(size, progress, false);
-
-                            Notification notification = notificationBuilder.build();
-                            mNM.notify(NOTIFICATION, notification);
-                        }
-                    }, 0, 1, TimeUnit.SECONDS);
-                } else {
-                    if(data.length + progress <= totalData.length)
-                        System.arraycopy(data, 0, totalData, progress, data.length);
-                    progress += data.length;
-
-                    if(size == progress) {
-                        processUpdate.shutdown();
-                        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
-                                .setContentTitle(mCtx.getText(R.string.screenshot))
-                                .setLocalOnly(true);
-
-                        Uri fileName = null;
-                        try {
-                            fileName = createFile(totalData);
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-
-                        notificationBuilder.setContentText(mCtx.getText(R.string.downloaded));
-                        notificationBuilder.setLargeIcon(BitmapFactory.decodeByteArray(totalData, 0, size));
-                        notificationBuilder.setSmallIcon(R.drawable.image_white);
-
-                        Intent notificationIntent = new Intent();
-                        notificationIntent.setAction(Intent.ACTION_VIEW);
-                        notificationIntent.setDataAndType(fileName, "image/*");
-                        notificationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        PendingIntent contentIntent = PendingIntent.getActivity(mCtx, 0, notificationIntent, 0);
-                        notificationBuilder.setContentIntent(contentIntent);
-                        mDownloading = false;
-
-                        Notification notification = notificationBuilder.build();
-                        mNM.notify(NOTIFICATION, notification);
-                    }
-                }
-            }
-        }
-    };
-
-     */
 
     private Uri createFile(byte[] totalData) throws IOException {
         String dirStr = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/AsteroidOSSync";
@@ -229,11 +168,9 @@ public class ScreenshotService implements IBleService {
     private void doMediaScan(File file){
         MediaScannerConnection.scanFile(mCtx,
                 new String[] { file.toString() }, null,
-                new MediaScannerConnection.OnScanCompletedListener() {
-                    public void onScanCompleted(String path, Uri uri) {
-                        Log.i("ExternalStorage", "Scanned " + path + ":");
-                        Log.i("ExternalStorage", "-> uri=" + uri);
-                    }
+                (path, uri) -> {
+                    Log.i("ExternalStorage", "Scanned " + path + ":");
+                    Log.i("ExternalStorage", "-> uri=" + uri);
                 });
     }
 
@@ -252,18 +189,68 @@ public class ScreenshotService implements IBleService {
 
     @Override
     public Boolean onBleReceive(UUID uuid, byte[] data) {
-        System.out.println("onBLEREC: " + uuid);
-        if (uuid.equals(AsteroidUUIDS.SCREENSHOT_CONTENT)){
-            System.out.println("STARTING SCREENSHOT DL");
-            Uri fileName = null;
-            try {
-                fileName = createFile(data);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-            System.out.println("URI IS: " + fileName.toString());
+        if(data.equals(null))
+            return false;
+        System.out.println("onBLEREC: " + uuid + " Progress: " + data.length);
+        if (data.length != 4){
+            mFirstNotify = false;
         }
-        return null;
+        if (uuid.equals(AsteroidUUIDS.SCREENSHOT_CONTENT)){
+                    if(mFirstNotify) {
+                        size = bytesToInt(data);
+                        totalData = new byte[size];
+                        mFirstNotify = false;
+                        progress = 0;
+
+                        processUpdate = Executors.newSingleThreadScheduledExecutor();
+                        processUpdate.scheduleWithFixedDelay(() -> {
+                            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
+                                    .setContentTitle(mCtx.getText(R.string.screenshot))
+                                    .setLocalOnly(true);
+
+                            notificationBuilder.setContentText(mCtx.getText(R.string.downloading));
+                            notificationBuilder.setSmallIcon(R.drawable.image_white);
+                            notificationBuilder.setProgress(size, progress, false);
+
+                            Notification notification = notificationBuilder.build();
+                            mNM.notify(NOTIFICATION, notification);
+                        }, 0, 1, TimeUnit.SECONDS);
+                    } else {
+                        if(data.length + progress <= totalData.length)
+                            System.arraycopy(data, 0, totalData, progress, data.length);
+                        progress += data.length;
+
+                        if(size == progress) {
+                            processUpdate.shutdown();
+                            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
+                                    .setContentTitle(mCtx.getText(R.string.screenshot))
+                                    .setLocalOnly(true);
+
+                            Uri fileName = null;
+                            try {
+                                fileName = createFile(totalData);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+
+                            notificationBuilder.setContentText(mCtx.getText(R.string.downloaded));
+                            notificationBuilder.setLargeIcon(BitmapFactory.decodeByteArray(totalData, 0, size));
+                            notificationBuilder.setSmallIcon(R.drawable.image_white);
+
+                            Intent notificationIntent = new Intent();
+                            notificationIntent.setAction(Intent.ACTION_VIEW);
+                            notificationIntent.setDataAndType(fileName, "image/*");
+                            notificationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            PendingIntent contentIntent = PendingIntent.getActivity(mCtx, 0, notificationIntent, 0);
+                            notificationBuilder.setContentIntent(contentIntent);
+                            mDownloading = false;
+
+                            Notification notification = notificationBuilder.build();
+                            mNM.notify(NOTIFICATION, notification);
+                        }
+                    }
+    }
+        return true;
     }
 
     class ScreenshotReqReceiver extends BroadcastReceiver {
