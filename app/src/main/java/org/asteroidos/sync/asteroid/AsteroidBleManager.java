@@ -166,6 +166,8 @@ public class AsteroidBleManager extends BleManager {
                 if (direction == IBleService.Direction.RX) {
                     setNotificationCallback(characteristic).with((device, data)
                             -> informService(characteristic.getUuid(), data.getValue()));
+
+                    //sometimes crashes with null pointer or sends random data
                     enableNotifications(characteristic).with((device, data)
                             -> informService(characteristic.getUuid(), data.getValue())).enqueue();
                 } else if (direction == IBleService.Direction.TX) {

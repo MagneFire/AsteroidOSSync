@@ -122,7 +122,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
          mNotificationService = new NotificationService(getApplicationContext(), mDevice);
          mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
          mTimeService = new TimeService(getApplicationContext(), mDevice);*/
-        mScreenshotService = new ScreenshotService(getApplicationContext(), this);
+        //mScreenshotService = new ScreenshotService(getApplicationContext(), this);
+        //mTimeService = new TimeService(getApplicationContext(), this);
         silentModeService = new SilentModeService(getApplicationContext());
 
     }
@@ -282,17 +283,14 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
              */
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
             /*
-
             mMediaService = new MediaService(getApplicationContext(), mDevice);
             mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
-            mTimeService = new TimeService(getApplicationContext(), mDevice);
             silentModeService = new SilentModeService(getApplicationContext());
-
-
              */
             mNotificationService = new NotificationService(getApplicationContext(), this);
             mWeatherService = new WeatherService(getApplicationContext(), this);
             mScreenshotService = new ScreenshotService(getApplicationContext(), this);
+            mTimeService = new TimeService(getApplicationContext(), this);
         }
 
         updateNotification();

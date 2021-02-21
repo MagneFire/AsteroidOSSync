@@ -189,7 +189,7 @@ public class ScreenshotService implements IBleService {
 
     @Override
     public Boolean onBleReceive(UUID uuid, byte[] data) {
-        if(data.equals(null))
+        if(data == null || data.length == 0)
             return false;
         System.out.println("onBLEREC: " + uuid + " Progress: " + data.length);
         if (data.length != 4){
