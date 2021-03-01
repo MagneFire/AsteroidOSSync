@@ -100,11 +100,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
+        if (defaultDevMacAddr.equals("")) return;
         String defaultLocalName = mPrefs.getString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
         BluetoothDevice device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
-        mBleMngr.setConnectionObserver(this);
         device.createBond();
         mBleMngr.connect(device)
+                .useAutoConnect(true)
                 .timeout(100000)
                 .retry(3, 200)
                 .done(device1 -> {
@@ -265,6 +266,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
         //TODO setup ble lib
         mBleMngr = new AsteroidBleManager(getApplicationContext(), SynchronizationService.this);
+        mBleMngr.setConnectionObserver(this);
+        handleConnect();
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
