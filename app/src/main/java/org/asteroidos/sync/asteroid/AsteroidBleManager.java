@@ -40,7 +40,7 @@ public class AsteroidBleManager extends BleManager {
         gattChars = new HashMap<>();
     }
 
-    public void send(UUID characteristic, byte[] data) {
+    public final void send(UUID characteristic, byte[] data) {
         gattChars.forEach((service, direction) -> {
             if (service.getUuid().equals(characteristic)) {
                 writeCharacteristic(service, data).enqueue();
@@ -178,7 +178,11 @@ public class AsteroidBleManager extends BleManager {
             gattServices.forEach((service) -> {
             });
             // Let all services now that we are connected.
-            synchronizationService.getServices().forEach((IBleService::sync));
+            try {
+                synchronizationService.getServices().forEach((IBleService::sync));
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
 
         @Override

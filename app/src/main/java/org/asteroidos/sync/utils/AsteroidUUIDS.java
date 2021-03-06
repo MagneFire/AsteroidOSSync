@@ -21,6 +21,7 @@ public class AsteroidUUIDS {
     public static final UUID SCREENSHOT_CONTENT         = UUID.fromString("00006002-0000-0000-0000-00A57E401D05");
 
     // MediaService
+    public static final UUID MEDIA_SERVICE_UUID         = UUID.fromString("00007071-0000-0000-0000-00A57E401D05");
     public static final UUID MEDIA_TITLE_CHAR           = UUID.fromString("00007001-0000-0000-0000-00A57E401D05");
     public static final UUID MEDIA_ALBUM_CHAR           = UUID.fromString("00007002-0000-0000-0000-00A57E401D05");
     public static final UUID MEDIA_ARTIST_CHAR          = UUID.fromString("00007003-0000-0000-0000-00A57E401D05");
