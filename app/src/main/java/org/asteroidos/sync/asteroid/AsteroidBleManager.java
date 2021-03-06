@@ -57,7 +57,7 @@ public class AsteroidBleManager extends BleManager {
     @Override
     public final void log(final int priority, @NonNull final String message) {
         if (BuildConfig.DEBUG || priority == Log.ERROR) {
-            Log.println(priority, "MyBleManager", message);
+            Log.println(priority, TAG, message);
         }
     }
 
@@ -80,7 +80,6 @@ public class AsteroidBleManager extends BleManager {
 
     public final void informService(UUID uuid, byte[] data) {
         synchronizationService.getServiceByUUID(uuid).onBleReceive(uuid, data);
-
     }
 
     public static class BatteryLevelEvent {
@@ -174,9 +173,6 @@ public class AsteroidBleManager extends BleManager {
 
                 }
             });
-
-            gattServices.forEach((service) -> {
-            });
             // Let all services now that we are connected.
             try {
                 synchronizationService.getServices().forEach((IBleService::sync));
@@ -188,9 +184,9 @@ public class AsteroidBleManager extends BleManager {
         @Override
         protected final void onDeviceDisconnected() {
             batteryCharacteristic = null;
+            gattServices.clear();
+            gattChars.clear();
             synchronizationService.getServices().forEach((IBleService::unsync));
         }
-
     }
-
 }
