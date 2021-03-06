@@ -414,6 +414,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                 case MSG_UPDATE:
                     mService.handleUpdate();
                     break;
+                case MSG_UNSET_DEVICE:
+                    mService.handleUnSetDevice();
                 default:
                     super.handleMessage(msg);
             }
