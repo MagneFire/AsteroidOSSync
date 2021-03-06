@@ -44,6 +44,7 @@ import org.asteroidos.sync.R;
 import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.ble.IBleService;
+import org.asteroidos.sync.ble.MediaService;
 import org.asteroidos.sync.ble.NotificationService;
 import org.asteroidos.sync.ble.ScreenshotService;
 import org.asteroidos.sync.ble.SilentModeService;
@@ -85,7 +86,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private ScreenshotService mScreenshotService;
     private WeatherService mWeatherService;
     private NotificationService mNotificationService;
-    //private MediaService mMediaService;
+    private MediaService mMediaService;
     private TimeService mTimeService;
     private SilentModeService silentModeService;
     private SharedPreferences mPrefs;
@@ -118,7 +119,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                 })
                 .enqueue();
 
-        //mNotificationService = new NotificationService(getApplicationContext(), this);
+        mNotificationService = new NotificationService(getApplicationContext(), this);
          /*mWeatherService = new WeatherService(getApplicationContext(), mDevice);
          mNotificationService = new NotificationService(getApplicationContext(), mDevice);
          mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
@@ -286,10 +287,9 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
              */
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
             /*
-            mMediaService = new MediaService(getApplicationContext(), mDevice);
-            mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
             silentModeService = new SilentModeService(getApplicationContext());
              */
+            mMediaService = new MediaService(getApplicationContext(), this);
             mNotificationService = new NotificationService(getApplicationContext(), this);
             mWeatherService = new WeatherService(getApplicationContext(), this);
             mScreenshotService = new ScreenshotService(getApplicationContext(), this);

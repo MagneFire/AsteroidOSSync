@@ -19,17 +19,23 @@ package org.asteroidos.sync.ble;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
+import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
-import android.os.Handler;
-import android.util.Log;
+import com.maxmpz.poweramp.player.PowerampAPI;
+import com.maxmpz.poweramp.player.PowerampAPIHelper;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
@@ -41,6 +47,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class MediaService implements IBleService,  MediaSessionManager.OnActiveSessionsChangedListener {
+
+    public static final String TAG = MediaService.class.toString();
 
     private static final byte MEDIA_COMMAND_PREVIOUS = 0x0;
     private static final byte MEDIA_COMMAND_NEXT     = 0x1;
@@ -61,31 +69,34 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
 
     private int mVolume;
 
-    public MediaService(Context ctx, IAsteroidDevice device)
-    {
+    public MediaService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
+        device.registerBleService(this);
 
         mSettings = mCtx.getSharedPreferences(PREFS_NAME, 0);
     }
 
     @Override
     public void sync() {
-        //mDevice.enableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, commandsListener);
         mCtx.getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, mVolumeChangeObserver);
         try {
             mMediaSessionManager = (MediaSessionManager) mCtx.getSystemService(Context.MEDIA_SESSION_SERVICE);
             List<MediaController> controllers = mMediaSessionManager.getActiveSessions(new ComponentName(mCtx, NLService.class));
-            onActiveSessionsChanged(controllers);
-            mMediaSessionManager.addOnActiveSessionsChangedListener(this, new ComponentName(mCtx, NLService.class));
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(() -> {
+                onActiveSessionsChanged(controllers);
+                mMediaSessionManager.addOnActiveSessionsChangedListener(this, new ComponentName(mCtx, NLService.class));
+            });
+
+
         } catch (SecurityException e) {
-            Log.w("MediaService", "No Notification Access");
+            Log.w(TAG, "No Notification Access");
         }
     }
 
     @Override
     public void unsync() {
-        //mDevice.disableNotify(AsteroidUUIDS.MEDIA_COMMANDS_CHAR);
         mCtx.getContentResolver().unregisterContentObserver(mVolumeChangeObserver);
 
         if(mMediaSessionManager != null)
@@ -94,7 +105,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
             try {
                 mMediaController.unregisterCallback(mMediaCallback);
             } catch(IllegalArgumentException ignored) {}
-            Log.d("MediaService", "MediaController removed");
+            Log.d(TAG, "MediaController removed");
         }
     }
 
@@ -120,86 +131,6 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
             }
         }
     };
-
-    /*
-    private BleDevice.ReadWriteListener commandsListener = new BleDevice.ReadWriteListener() {
-        @Override
-        public void onEvent(ReadWriteEvent e) {
-            if(e.isNotification() && e.charUuid().equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR)) {
-                if (mMediaController != null) {
-                    byte[] data = e.data();
-                    boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
-                            .equals(PowerampAPI.PACKAGE_NAME);
-
-                    switch (data[0]) {
-                        case MEDIA_COMMAND_PREVIOUS:
-                            if(isPoweramp) {
-                                PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                        .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PREVIOUS));
-                            } else {
-                                mMediaController.getTransportControls().skipToPrevious();
-                            }
-                            break;
-                        case MEDIA_COMMAND_NEXT:
-                            if(isPoweramp) {
-                                PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                        .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.NEXT));
-                            } else {
-                                mMediaController.getTransportControls().skipToNext();
-                            }
-                            break;
-                        case MEDIA_COMMAND_PLAY:
-                            if(isPoweramp) {
-                                PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                        .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.RESUME));
-                            } else {
-                                mMediaController.getTransportControls().play();
-                            }
-                            break;
-                        case MEDIA_COMMAND_PAUSE:
-                            if (isPoweramp) {
-                                PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                        .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PAUSE));
-                            } else {
-                                mMediaController.getTransportControls().pause();
-                            }
-                             break;
-                        case MEDIA_COMMAND_VOLUME:
-                            if (mMediaController.getPlaybackInfo() != null) {
-                                if (data[1] != mVolume) {
-                                    int delta = Math.abs(mVolume - data[1]);
-                                    int deviceDelta = 100 / mMediaController.getPlaybackInfo().getMaxVolume();
-                                    // Change in volume is smaller than the device volume step (i.e. volume won't change)
-                                    // Increase or decrease the volume by one step anyway to improve UX.
-                                    if (delta < deviceDelta) {
-                                        if (data[1] > mVolume) {
-                                            mMediaController.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-                                        } else if (data[1] < mVolume) {
-                                            mMediaController.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
-                                        }
-                                    } else {
-                                        // Convert volume range (0-100) to Android device range(0-?).
-                                        int volume = (int) (mMediaController.getPlaybackInfo().getMaxVolume() * (data[1] / 100.0));
-                                        mMediaController.setVolumeTo(volume, AudioManager.FLAG_SHOW_UI);
-                                    }
-                                    // Set theoretical volume.
-                                    mVolume = data[1];
-                                }
-                            }
-                             break;
-                    }
-                } else {
-                    Intent mediaIntent = new Intent(Intent.ACTION_MAIN);
-                    mediaIntent.addCategory(Intent.CATEGORY_APP_MUSIC);
-                    mediaIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    mCtx.startActivity(mediaIntent);
-                }
-            }
-        }
-    };
-
-
-     */
 
     /**
      * Callback for the MediaController.
@@ -278,7 +209,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
             if (mMediaController != null && !controllers.get(0).getSessionToken().equals(mMediaController.getSessionToken())) {
                 // Detach current controller
                 mMediaController.unregisterCallback(mMediaCallback);
-                Log.d("MediaService", "MediaController removed");
+                Log.d(TAG, "MediaController removed");
                 mMediaController = null;
             }
 
@@ -289,7 +220,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
                 mMediaCallback.onMetadataChanged(mMediaController.getMetadata());
                 if (mMediaController.getPlaybackState() != null)
                     mMediaCallback.onPlaybackStateChanged(mMediaController.getPlaybackState());
-                Log.d("MediaService", "MediaController set: " + mMediaController.getPackageName());
+                Log.d(TAG, "MediaController set: " + mMediaController.getPackageName());
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putString(PREFS_MEDIA_CONTROLLER_PACKAGE, mMediaController.getPackageName());
                 editor.apply();
@@ -304,16 +235,92 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
 
     @Override
     public HashMap<UUID, Direction> getCharacteristicUUIDs() {
-        return null;
+
+        HashMap<UUID, Direction> chars = new HashMap<>();
+        chars.put(AsteroidUUIDS.MEDIA_TITLE_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.MEDIA_ALBUM_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.MEDIA_ARTIST_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.MEDIA_PLAYING_CHAR, Direction.TX);
+        chars.put(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, Direction.RX);
+        chars.put(AsteroidUUIDS.MEDIA_VOLUME_CHAR, Direction.TX);
+
+        return chars;
     }
 
     @Override
-    public UUID getServiceUUID() {
-        return null;
+    public final UUID getServiceUUID() {
+        return AsteroidUUIDS.MEDIA_SERVICE_UUID;
     }
 
     @Override
-    public Boolean onBleReceive(UUID uuid, byte[] data) {
-        return null;
+    public final Boolean onBleReceive(UUID uuid, byte[] data) {
+        if (!uuid.equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR))
+            return false;
+
+        if (mMediaController != null && data != null) {
+            boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
+                    .equals(PowerampAPI.PACKAGE_NAME);
+
+            switch (data[0]) {
+                case MEDIA_COMMAND_PREVIOUS:
+                    if(isPoweramp) {
+                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PREVIOUS));
+                    } else {
+                        mMediaController.getTransportControls().skipToPrevious();
+                    }
+                    break;
+                case MEDIA_COMMAND_NEXT:
+                    if(isPoweramp) {
+                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.NEXT));
+                    } else {
+                        mMediaController.getTransportControls().skipToNext();
+                    }
+                    break;
+                case MEDIA_COMMAND_PLAY:
+                    if(isPoweramp) {
+                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.RESUME));
+                    } else {
+                        mMediaController.getTransportControls().play();
+                    }
+                    break;
+                case MEDIA_COMMAND_PAUSE:
+                    if (isPoweramp) {
+                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PAUSE));
+                    } else {
+                        mMediaController.getTransportControls().pause();
+                    }
+                    break;
+                case MEDIA_COMMAND_VOLUME:
+                    if (mMediaController.getPlaybackInfo() != null) {
+                        if (data[1] != mVolume) {
+                            int delta = Math.abs(mVolume - data[1]);
+                            int deviceDelta = 100 / mMediaController.getPlaybackInfo().getMaxVolume();
+                            // Change in volume is smaller than the device volume step (i.e. volume won't change)
+                            // Increase or decrease the volume by one step anyway to improve UX.
+                            if (delta < deviceDelta) {
+                                if (data[1] > mVolume) {
+                                    mMediaController.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                } else if (data[1] < mVolume) {
+                                    mMediaController.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                }
+                            } else {
+                                // Convert volume range (0-100) to Android device range(0-?).
+                                int volume = (int) (mMediaController.getPlaybackInfo().getMaxVolume() * (data[1] / 100.0));
+                                mMediaController.setVolumeTo(volume, AudioManager.FLAG_SHOW_UI);
+                            }
+                            // Set theoretical volume.
+                            mVolume = data[1];
+                        }
+                    }
+                    break;
+            }
+
+        }
+
+        return true;
     }
 }
