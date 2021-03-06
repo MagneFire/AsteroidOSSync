@@ -170,12 +170,24 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public ConnectionState getConnectionState() {
-        return null;
+    public final ConnectionState getConnectionState() {
+        ConnectionState state = null;
+        switch (mState){
+            case (STATUS_CONNECTED):
+                state = ConnectionState.STATUS_CONNECTED;
+                break;
+            case (STATUS_CONNECTING):
+                state = ConnectionState.STATUS_CONNECTING;
+                break;
+            case (STATUS_DISCONNECTED):
+                state = ConnectionState.STATUS_DISCONNECTED;
+                break;
+        }
+        return state;
     }
 
     @Override
-    public void sendToDevice(UUID characteristic, byte[] data, IBleService service) {
+    public final void sendToDevice(UUID characteristic, byte[] data, IBleService service) {
         mBleMngr.send(characteristic, data);
         System.out.println(characteristic.toString() + ": " + Arrays.toString(data));
     }
@@ -222,7 +234,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public void onDeviceConnected(@NonNull BluetoothDevice device) {
+    public final void onDeviceConnected(@NonNull BluetoothDevice device) {
         mState = STATUS_CONNECTED;
         updateNotification();
 
@@ -234,19 +246,19 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public void onDeviceReady(@NonNull BluetoothDevice device) {
+    public final void onDeviceReady(@NonNull BluetoothDevice device) {
         mState = STATUS_CONNECTED;
         updateNotification();
     }
 
     @Override
-    public void onDeviceDisconnecting(@NonNull BluetoothDevice device) {
+    public final void onDeviceDisconnecting(@NonNull BluetoothDevice device) {
         mState = STATUS_CONNECTED;
         updateNotification();
     }
 
     @Override
-    public void onDeviceDisconnected(@NonNull BluetoothDevice device, int reason) {
+    public final void onDeviceDisconnected(@NonNull BluetoothDevice device, int reason) {
         mState = STATUS_DISCONNECTED;
         updateNotification();
 
@@ -265,7 +277,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
             mNM.createNotificationChannel(notificationChannel);
         }
 
-        //TODO setup ble lib
         mBleMngr = new AsteroidBleManager(getApplicationContext(), SynchronizationService.this);
         mBleMngr.setConnectionObserver(this);
         handleConnect();
@@ -373,11 +384,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public void handleBattery(AsteroidBleManager.BatteryLevelEvent battery) {
         Log.d(TAG, "handleBattery: " + battery.battery + "%");
         batteryPercentage = battery.battery;
-        /*try {
-            Message.obtain().replyTo.send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }*/
     }
 
 
