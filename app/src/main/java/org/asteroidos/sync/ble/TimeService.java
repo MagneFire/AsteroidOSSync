@@ -119,8 +119,8 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     }
 
     @Override
-    public UUID getServiceUUID() {
-        return null;
+    public final UUID getServiceUUID() {
+        return AsteroidUUIDS.TIME_SERVICE_UUID;
     }
 
     @Override
