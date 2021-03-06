@@ -39,6 +39,7 @@ import com.maxmpz.poweramp.player.PowerampAPIHelper;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
+import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.nio.charset.StandardCharsets;
@@ -47,6 +48,8 @@ import java.util.List;
 import java.util.UUID;
 
 public class MediaService implements IBleService,  MediaSessionManager.OnActiveSessionsChangedListener {
+
+    public static final String TAG = MediaService.class.toString();
 
     private static final byte MEDIA_COMMAND_PREVIOUS = 0x0;
     private static final byte MEDIA_COMMAND_NEXT     = 0x1;
@@ -82,10 +85,15 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
         try {
             mMediaSessionManager = (MediaSessionManager) mCtx.getSystemService(Context.MEDIA_SESSION_SERVICE);
             List<MediaController> controllers = mMediaSessionManager.getActiveSessions(new ComponentName(mCtx, NLService.class));
-            onActiveSessionsChanged(controllers);
-            mMediaSessionManager.addOnActiveSessionsChangedListener(this, new ComponentName(mCtx, NLService.class));
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(() -> {
+                onActiveSessionsChanged(controllers);
+                mMediaSessionManager.addOnActiveSessionsChangedListener(this, new ComponentName(mCtx, NLService.class));
+            });
+
+
         } catch (SecurityException e) {
-            Log.w("MediaService", "No Notification Access");
+            Log.w(TAG, "No Notification Access");
         }
     }
 
@@ -100,7 +108,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
             try {
                 mMediaController.unregisterCallback(mMediaCallback);
             } catch(IllegalArgumentException ignored) {}
-            Log.d("MediaService", "MediaController removed");
+            Log.d(TAG, "MediaController removed");
         }
     }
 
@@ -199,24 +207,23 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
         }
     };
     @Override
-    public final void onActiveSessionsChanged(List<MediaController> controllers) {
+    public void onActiveSessionsChanged(List<MediaController> controllers) {
         if (controllers.size() > 0) {
             if (mMediaController != null && !controllers.get(0).getSessionToken().equals(mMediaController.getSessionToken())) {
                 // Detach current controller
                 mMediaController.unregisterCallback(mMediaCallback);
-                Log.d("MediaService", "MediaController removed");
+                Log.d(TAG, "MediaController removed");
                 mMediaController = null;
             }
 
             if(mMediaController == null) {
                 // Attach new controller
-                Looper.prepare();
                 mMediaController = controllers.get(0);
                 mMediaController.registerCallback(mMediaCallback);
                 mMediaCallback.onMetadataChanged(mMediaController.getMetadata());
                 if (mMediaController.getPlaybackState() != null)
                     mMediaCallback.onPlaybackStateChanged(mMediaController.getPlaybackState());
-                Log.d("MediaService", "MediaController set: " + mMediaController.getPackageName());
+                Log.d(TAG, "MediaController set: " + mMediaController.getPackageName());
                 SharedPreferences.Editor editor = mSettings.edit();
                 editor.putString(PREFS_MEDIA_CONTROLLER_PACKAGE, mMediaController.getPackageName());
                 editor.apply();
@@ -315,13 +322,12 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
                     break;
             }
 
-        } else {
+        }/* else {
             Intent mediaIntent = new Intent(Intent.ACTION_MAIN);
             mediaIntent.addCategory(Intent.CATEGORY_APP_MUSIC);
             mediaIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mCtx.startActivity(mediaIntent);
-        }
-
+        }*/
 
         return true;
     }
