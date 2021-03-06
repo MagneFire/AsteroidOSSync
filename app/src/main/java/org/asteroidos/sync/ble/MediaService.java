@@ -111,6 +111,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
                 mMediaController.unregisterCallback(mMediaCallback);
             } catch(IllegalArgumentException ignored) {}
             Log.d(TAG, "MediaController removed");
+            mMediaController = null;
         }
     }
 
