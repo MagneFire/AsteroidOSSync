@@ -25,6 +25,7 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -374,6 +375,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
             }
             mBleMngr.disconnect().enqueue();
         }
+        bleServices.clear();
         mDevice = null;
         editor.putString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
         editor.putString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
@@ -416,6 +418,9 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                     break;
                 case MSG_SET_DEVICE:
                     mService.handleSetDevice((BluetoothDevice) msg.obj);
+                    break;
+                case MSG_UNSET_DEVICE:
+                    mService.handleUnSetDevice();
                     break;
                 case MSG_UPDATE:
                     mService.handleUpdate();
