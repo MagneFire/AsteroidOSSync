@@ -59,6 +59,8 @@ public class DeviceListFragment extends Fragment implements View.OnClickListener
         FloatingActionButton fab = view.findViewById(R.id.fab);
         ListView mScanListView = view.findViewById(R.id.device_list);
 
+        mRippleBackground.startRippleAnimation();
+
         fab.setOnClickListener(this);
 
         mLeDeviceListAdapter = new LeDeviceListAdapter();
@@ -82,8 +84,8 @@ public class DeviceListFragment extends Fragment implements View.OnClickListener
 
     /* Scanning events handling */
     public void scanningStarted() {
-        mRippleBackground.startRippleAnimation();
-        mSearchingText.setText(R.string.searching);
+        if (mRippleBackground != null) mRippleBackground.startRippleAnimation();
+        if (mSearchingText != null) mSearchingText.setText(R.string.searching);
     }
 
     public void scanningStopped() {
