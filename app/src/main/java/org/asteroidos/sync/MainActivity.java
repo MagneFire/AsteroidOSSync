@@ -176,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListFragmen
 
     @Override
     public void onDefaultDeviceUnselected() {
+        onScanRequested();
         mListFragment = new DeviceListFragment();
 
         getSupportFragmentManager()
