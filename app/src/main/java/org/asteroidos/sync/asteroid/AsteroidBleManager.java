@@ -14,14 +14,12 @@ import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
 
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.BuildConfig;
-import no.nordicsemi.android.ble.annotation.WriteType;
 import no.nordicsemi.android.ble.data.Data;
 
 public class AsteroidBleManager extends BleManager {
@@ -31,7 +29,6 @@ public class AsteroidBleManager extends BleManager {
     SynchronizationService synchronizationService;
     HashMap<BluetoothGattCharacteristic, IBleService.Direction> gattChars;
     ArrayList<BluetoothGattService> gattServices;
-    private BluetoothGattCharacteristic notificationUpdateCharacteristic;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
@@ -57,7 +54,7 @@ public class AsteroidBleManager extends BleManager {
     @Override
     public final void log(final int priority, @NonNull final String message) {
         if (BuildConfig.DEBUG || priority == Log.ERROR) {
-            Log.println(priority, "MyBleManager", message);
+            Log.println(priority, TAG, message);
         }
     }
 
@@ -65,12 +62,10 @@ public class AsteroidBleManager extends BleManager {
         cancelQueue();
     }
 
-
     @Override
     protected final void finalize() throws Throwable {
         super.finalize();
     }
-
 
     public final void setBatteryLevel(Data data) {
         BatteryLevelEvent batteryLevelEvent = new BatteryLevelEvent();
@@ -92,9 +87,6 @@ public class AsteroidBleManager extends BleManager {
         @Override
         public final boolean isRequiredServiceSupported(@NonNull final BluetoothGatt gatt) {
             final BluetoothGattService batteryService = gatt.getService(AsteroidUUIDS.BATTERY_SERVICE_UUID);
-            //Replace with dynamic list
-            //final BluetoothGattService notificationService = gatt.getService(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
-            final BluetoothGattService weatherService = gatt.getService(AsteroidUUIDS.WEATHER_SERVICE_UUID);
 
             boolean supported = true;
 
@@ -131,21 +123,11 @@ public class AsteroidBleManager extends BleManager {
 
             supported = (batteryCharacteristic != null && notify);
 
-            //if (notificationService != null) {
-            //notificationUpdateCharacteristic = notificationService.getCharacteristic(AsteroidUUIDS.NOTIFICATION_UPDATE_CHAR);
-
-            //}
-            //supported &= (notificationUpdateCharacteristic != null && notify);
             Log.d(TAG, "FOUND? " + supported);
 
             // Return true if all required services have been found
             return supported;
         }
-
-        /*@Override
-        protected final boolean isOptionalServiceSupported(@NonNull final BluetoothGatt gatt) {
-            return super.isOptionalServiceSupported(gatt);
-        }*/
 
         @Override
         protected final void initialize() {
@@ -175,12 +157,10 @@ public class AsteroidBleManager extends BleManager {
                 }
             });
 
-            gattServices.forEach((service) -> {
-            });
             // Let all services now that we are connected.
             try {
                 synchronizationService.getServices().forEach((IBleService::sync));
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -189,6 +169,8 @@ public class AsteroidBleManager extends BleManager {
         protected final void onDeviceDisconnected() {
             batteryCharacteristic = null;
             synchronizationService.getServices().forEach((IBleService::unsync));
+            gattServices.clear();
+            gattChars.clear();
         }
 
     }
