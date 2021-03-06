@@ -98,7 +98,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
     }
 
     @Override
-    public void unsync() {
+    public final void unsync() {
         mCtx.getContentResolver().unregisterContentObserver(mVolumeChangeObserver);
 
         if(mMediaSessionManager != null)
@@ -109,6 +109,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
             } catch(IllegalArgumentException ignored) {}
             Log.d(TAG, "MediaController removed");
         }
+        mMediaController = null;
     }
 
     private ContentObserver mVolumeChangeObserver = new ContentObserver(new Handler()) {
