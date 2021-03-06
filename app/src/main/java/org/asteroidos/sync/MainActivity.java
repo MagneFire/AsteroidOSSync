@@ -120,6 +120,8 @@ public class MainActivity extends AppCompatActivity implements DeviceListFragmen
         mSyncServiceIntent = new Intent(this, SynchronizationService.class);
         startService(mSyncServiceIntent);
 
+        if(mListFragment != null)        mListFragment.scanningStarted();
+        else if(mDetailFragment != null) mDetailFragment.scanningStarted();
 
         if (savedInstanceState == null) {
             Fragment f;
@@ -150,6 +152,9 @@ public class MainActivity extends AppCompatActivity implements DeviceListFragmen
         scanner.stopScan(scanCallback);
         mListFragment.scanningStopped();
         mDetailFragment = new DeviceDetailFragment();
+
+        if(mListFragment != null)        mListFragment.scanningStopped();
+        else if(mDetailFragment != null) mDetailFragment.scanningStopped();
 
         getSupportFragmentManager()
                 .beginTransaction()
@@ -330,6 +335,9 @@ public class MainActivity extends AppCompatActivity implements DeviceListFragmen
         //scanner.flushPendingScanResults(scanCallback); Todo: fix crash on subsequent call
         scanner.stopScan(scanCallback);
         scanner.startScan(filters, settings, scanCallback);
+
+        if(mListFragment != null)        mListFragment.scanningStarted();
+        else if(mDetailFragment != null) mDetailFragment.scanningStarted();
     }
 
     @Override
