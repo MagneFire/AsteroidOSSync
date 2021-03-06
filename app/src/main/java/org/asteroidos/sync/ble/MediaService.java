@@ -31,6 +31,7 @@ import android.media.session.PlaybackState;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.KeyEvent;
 
 import androidx.annotation.NonNull;
 
@@ -42,6 +43,7 @@ import org.asteroidos.sync.services.NLService;
 import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -257,10 +259,10 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
 
     @Override
     public final Boolean onBleReceive(UUID uuid, byte[] data) {
-        if (!uuid.equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR))
+        if (!uuid.equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR) || data == null)
             return false;
 
-        if (mMediaController != null && data != null) {
+        if (mMediaController != null) {
             boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
                     .equals(PowerampAPI.PACKAGE_NAME);
 
@@ -322,12 +324,16 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
                     break;
             }
 
-        }/* else {
-            Intent mediaIntent = new Intent(Intent.ACTION_MAIN);
-            mediaIntent.addCategory(Intent.CATEGORY_APP_MUSIC);
-            mediaIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mCtx.startActivity(mediaIntent);
-        }*/
+        } else if (data[0] != MEDIA_COMMAND_VOLUME){
+            Log.d(TAG, "No active media session, starting playback...");
+
+            try {
+                Runtime runtime = Runtime.getRuntime();
+                runtime.exec("input keyevent " + KeyEvent.KEYCODE_MEDIA_PLAY);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         return true;
     }
