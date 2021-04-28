@@ -41,8 +41,8 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.asteroidos.sync.R;
-import org.asteroidos.sync.ble.SilentModeService;
-import org.asteroidos.sync.ble.TimeService;
+import org.asteroidos.sync.connectivity.SilentModeService;
+import org.asteroidos.sync.connectivity.TimeService;
 import org.asteroidos.sync.services.PhoneStateReceiver;
 import org.asteroidos.sync.services.SynchronizationService;
 

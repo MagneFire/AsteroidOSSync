@@ -9,7 +9,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.asteroidos.sync.ble.IBleService;
+import org.asteroidos.sync.connectivity.IConnectivityService;
 import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
@@ -27,7 +27,7 @@ public class AsteroidBleManager extends BleManager {
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     SynchronizationService synchronizationService;
-    HashMap<BluetoothGattCharacteristic, IBleService.Direction> gattChars;
+    HashMap<BluetoothGattCharacteristic, IConnectivityService.Direction> gattChars;
     ArrayList<BluetoothGattService> gattServices;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
@@ -74,7 +74,7 @@ public class AsteroidBleManager extends BleManager {
     }
 
     public final void informService(UUID uuid, byte[] data) {
-        synchronizationService.getServiceByUUID(uuid).onBleReceive(uuid, data);
+        synchronizationService.getServiceByUUID(uuid).onReceive(uuid, data);
     }
 
     public static class BatteryLevelEvent {
@@ -99,10 +99,10 @@ public class AsteroidBleManager extends BleManager {
                 }
             }
 
-            for (IBleService service : synchronizationService.getServices()) {
+            for (IConnectivityService service : synchronizationService.getServices()) {
 
                 BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
-                HashMap<UUID, IBleService.Direction> characteristics = service.getCharacteristicUUIDs();
+                HashMap<UUID, IConnectivityService.Direction> characteristics = service.getCharacteristicUUIDs();
 
                 if (characteristics == null) {
                     Log.d(TAG, "CHAR NULL! " + characteristics + " " + service.getServiceUUID());
@@ -144,21 +144,21 @@ public class AsteroidBleManager extends BleManager {
 
             gattChars.forEach((characteristic, direction) -> {
                 System.out.println(characteristic.toString() + ": " + direction.name());
-                if (direction == IBleService.Direction.RX) {
+                if (direction == IConnectivityService.Direction.RX) {
                     setNotificationCallback(characteristic).with((device, data)
                             -> informService(characteristic.getUuid(), data.getValue()));
 
                     //sometimes crashes with null pointer or sends random data
                     enableNotifications(characteristic).with((device, data)
                             -> informService(characteristic.getUuid(), data.getValue())).enqueue();
-                } else if (direction == IBleService.Direction.TX) {
+                } else if (direction == IConnectivityService.Direction.TX) {
 
                 }
             });
 
             // Let all services now that we are connected.
             try {
-                synchronizationService.getServices().forEach((IBleService::sync));
+                synchronizationService.getServices().forEach((IConnectivityService::sync));
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -169,7 +169,7 @@ public class AsteroidBleManager extends BleManager {
             batteryCharacteristic = null;
             gattServices.clear();
             gattChars.clear();
-            synchronizationService.getServices().forEach((IBleService::unsync));
+            synchronizationService.getServices().forEach((IConnectivityService::unsync));
             gattServices.clear();
             gattChars.clear();
         }

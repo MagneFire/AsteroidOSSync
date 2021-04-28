@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.app.Activity;
 import android.content.Context;

@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -33,7 +33,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class TimeService implements IBleService, SharedPreferences.OnSharedPreferenceChangeListener {
+public class TimeService implements IConnectivityService, SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static final String PREFS_NAME = "TimePreference";
     public static final String PREFS_SYNC_TIME = "syncTime";
@@ -121,7 +121,7 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     }
 
     @Override
-    public final Boolean onBleReceive(UUID uuid, byte[] data) {
+    public final Boolean onReceive(UUID uuid, byte[] data) {
         return null;
     }
 

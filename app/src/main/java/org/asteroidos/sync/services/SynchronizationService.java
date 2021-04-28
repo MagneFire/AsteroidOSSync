@@ -25,7 +25,6 @@ import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -44,14 +43,14 @@ import org.asteroidos.sync.MainActivity;
 import org.asteroidos.sync.R;
 import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
-import org.asteroidos.sync.ble.IBleService;
-import org.asteroidos.sync.ble.IService;
-import org.asteroidos.sync.ble.MediaService;
-import org.asteroidos.sync.ble.NotificationService;
-import org.asteroidos.sync.ble.ScreenshotService;
-import org.asteroidos.sync.ble.SilentModeService;
-import org.asteroidos.sync.ble.TimeService;
-import org.asteroidos.sync.ble.WeatherService;
+import org.asteroidos.sync.connectivity.IConnectivityService;
+import org.asteroidos.sync.connectivity.IService;
+import org.asteroidos.sync.connectivity.MediaService;
+import org.asteroidos.sync.connectivity.NotificationService;
+import org.asteroidos.sync.connectivity.ScreenshotService;
+import org.asteroidos.sync.connectivity.SilentModeService;
+import org.asteroidos.sync.connectivity.TimeService;
+import org.asteroidos.sync.connectivity.WeatherService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,7 +88,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private AsteroidBleManager mBleMngr;
     public int batteryPercentage = 0;
 
-    List<IBleService> bleServices;
+    List<IConnectivityService> bleServices;
     List<IService> nonBleServices;
 
     final void handleConnect() {
@@ -120,7 +119,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     final void handleDisconnect() {
         if (mBleMngr == null) return;
         if (mState == STATUS_DISCONNECTED) return;
-        for (IBleService service : bleServices){
+        for (IConnectivityService service : bleServices){
             service.unsync();
         }
         mBleMngr.abort();
@@ -171,13 +170,13 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public final void sendToDevice(UUID characteristic, byte[] data, IBleService service) {
+    public final void sendToDevice(UUID characteristic, byte[] data, IConnectivityService service) {
         mBleMngr.send(characteristic, data);
         System.out.println(characteristic.toString() + ": " + Arrays.toString(data));
     }
 
     @Override
-    public final void registerBleService(IBleService service) {
+    public final void registerBleService(IConnectivityService service) {
         Log.d(TAG, "registerBleService: " + service.getServiceUUID().toString());
         boolean success = bleServices.add(service);
         Log.d(TAG, "BLE Service registered: " + success + service.getServiceUUID());
@@ -185,7 +184,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
     @Override
     public final void unregisterBleService(UUID serviceUUID) {
-        for (IBleService service : bleServices){
+        for (IConnectivityService service : bleServices){
             if (service.getServiceUUID().equals(serviceUUID)){
                 bleServices.remove(service);
                 Log.d(TAG, "BLE Service unregistered: " + service.getServiceUUID());
@@ -195,8 +194,8 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public final IBleService getServiceByUUID(UUID uuid) {
-        for (IBleService service : bleServices){
+    public final IConnectivityService getServiceByUUID(UUID uuid) {
+        for (IConnectivityService service : bleServices){
             if (service.getServiceUUID().equals(uuid)){
                 return service;
             } else {
@@ -213,7 +212,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     }
 
     @Override
-    public final List<IBleService> getServices(){
+    public final List<IConnectivityService> getServices(){
         return bleServices;
     }
 
@@ -361,7 +360,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private void handleUnSetDevice() {
         SharedPreferences.Editor editor = mPrefs.edit();
         if (mState != STATUS_DISCONNECTED) {
-            for (IBleService service : bleServices){
+            for (IConnectivityService service : bleServices){
                 service.unsync();
             }
             for(IService service: nonBleServices){

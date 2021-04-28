@@ -1,4 +1,4 @@
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 /**
  * Every Service of Sync has to implement the {@link IService} interface.

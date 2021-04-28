@@ -15,18 +15,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.util.Log;
 
 import org.asteroidos.sync.NotificationPreferences;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.dataobjects.Notification;
-import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.ArrayList;
@@ -35,7 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-public class NotificationService implements IBleService {
+public class NotificationService implements IConnectivityService {
 
     public static final String TAG = NotificationService.class.toString();
     private Context mCtx;
@@ -90,7 +88,7 @@ public class NotificationService implements IBleService {
     }
 
     @Override
-    public Boolean onBleReceive(UUID uuid, byte[] data) {
+    public Boolean onReceive(UUID uuid, byte[] data) {
         return null;
     }
 

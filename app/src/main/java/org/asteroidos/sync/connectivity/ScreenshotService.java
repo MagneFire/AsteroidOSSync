@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -54,10 +54,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import github.vatsal.easyweather.retrofit.models.Sys;
-
 @SuppressWarnings({"FieldCanBeLocal"}) // For clarity, we prefer having NOTIFICATION as a top level field
-public class ScreenshotService implements IBleService {
+public class ScreenshotService implements IConnectivityService {
     private static final String NOTIFICATION_CHANNEL_ID = "screenshotservice_channel_id_01";
     private int NOTIFICATION = 2726;
 
@@ -188,7 +186,7 @@ public class ScreenshotService implements IBleService {
     }
 
     @Override
-    public Boolean onBleReceive(UUID uuid, byte[] data) {
+    public Boolean onReceive(UUID uuid, byte[] data) {
         if(data == null || data.length == 0)
             return false;
         System.out.println("onBLEREC: " + uuid + " Progress: " + data.length);

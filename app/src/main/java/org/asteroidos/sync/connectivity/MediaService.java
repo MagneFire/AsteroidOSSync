@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -40,7 +40,6 @@ import com.maxmpz.poweramp.player.PowerampAPIHelper;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
-import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.io.IOException;
@@ -49,7 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-public class MediaService implements IBleService,  MediaSessionManager.OnActiveSessionsChangedListener {
+public class MediaService implements IConnectivityService,  MediaSessionManager.OnActiveSessionsChangedListener {
 
     public static final String TAG = MediaService.class.toString();
 
@@ -258,7 +257,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
     }
 
     @Override
-    public final Boolean onBleReceive(UUID uuid, byte[] data) {
+    public final Boolean onReceive(UUID uuid, byte[] data) {
         if (!uuid.equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR) || data == null)
             return false;
 

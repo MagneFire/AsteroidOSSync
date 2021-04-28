@@ -1,7 +1,6 @@
 package org.asteroidos.sync.asteroid;
 
-import org.asteroidos.sync.ble.IBleService;
-import org.asteroidos.sync.ble.IService;
+import org.asteroidos.sync.connectivity.IConnectivityService;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,11 +33,11 @@ public interface IAsteroidDevice {
      */
     ConnectionState getConnectionState();
 
-    void sendToDevice(UUID characteristic, byte[] data, IBleService service);
+    void sendToDevice(UUID characteristic, byte[] data, IConnectivityService service);
 
-    void registerBleService(IBleService service);
+    void registerBleService(IConnectivityService service);
     void unregisterBleService(UUID serviceUUID);
 
-    IBleService getServiceByUUID(UUID uuid);
-    List<IBleService> getServices();
+    IConnectivityService getServiceByUUID(UUID uuid);
+    List<IConnectivityService> getServices();
 }

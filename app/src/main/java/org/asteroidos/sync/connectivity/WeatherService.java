@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.asteroidos.sync.ble;
+package org.asteroidos.sync.connectivity;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -46,7 +46,7 @@ import github.vatsal.easyweather.WeatherMap;
 import github.vatsal.easyweather.retrofit.models.ForecastResponseModel;
 import github.vatsal.easyweather.retrofit.models.List;
 
-public class WeatherService implements IBleService {
+public class WeatherService implements IConnectivityService {
 
     private static final String owmApiKey = "ffcb5a7ed134aac3d095fa628bc46c65";
 
@@ -255,7 +255,7 @@ public class WeatherService implements IBleService {
     }
 
     @Override
-    public Boolean onBleReceive(UUID uuid, byte[] data) {
+    public Boolean onReceive(UUID uuid, byte[] data) {
         return null;
     }
 
