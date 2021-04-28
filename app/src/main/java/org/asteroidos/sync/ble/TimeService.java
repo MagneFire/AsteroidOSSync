@@ -24,17 +24,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.Handler;
 import android.os.SystemClock;
-import android.util.ArraySet;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class TimeService implements IBleService, SharedPreferences.OnSharedPreferenceChangeListener {
@@ -56,14 +52,13 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     public TimeService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
+        device.registerBleService(this);
         mTimeSyncSettings = ctx.getSharedPreferences(PREFS_NAME, 0);
         mTimeSyncSettings.registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
-    public void sync() {
-        Handler handler = new Handler();
-        handler.postDelayed(this::updateTime, 500);
+    public final void sync() {
 
         // Register a broadcast handler to use for the alarm Intent
         // Also listen for TIME_CHANGED and TIMEZONE_CHANGED events
@@ -81,10 +76,11 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
         alarmMgr.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                 SystemClock.elapsedRealtime() + AlarmManager.INTERVAL_DAY,
                 AlarmManager.INTERVAL_DAY, alarmPendingIntent);
+
     }
 
     @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+    public final void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         updateTime();
     }
 
@@ -98,11 +94,12 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
             data[3] = (byte)(c.get(Calendar.HOUR_OF_DAY));
             data[4] = (byte)(c.get(Calendar.MINUTE));
             data[5] = (byte)(c.get(Calendar.SECOND));
+
             mDevice.sendToDevice(AsteroidUUIDS.TIME_SET_CHAR, data, TimeService.this);
         }
     }
 
-    public void unsync() {
+    public final void unsync() {
         try {
             mCtx.unregisterReceiver(mSReceiver);
         } catch (IllegalArgumentException ignored) {}
@@ -112,7 +109,7 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     }
 
     @Override
-    public HashMap<UUID, Direction> getCharacteristicUUIDs() {
+    public final HashMap<UUID, Direction> getCharacteristicUUIDs() {
         HashMap<UUID, Direction> map = new HashMap<>();
         map.put(AsteroidUUIDS.TIME_SET_CHAR, Direction.TX);
         return map;
@@ -124,13 +121,13 @@ public class TimeService implements IBleService, SharedPreferences.OnSharedPrefe
     }
 
     @Override
-    public Boolean onBleReceive(UUID uuid, byte[] data) {
+    public final Boolean onBleReceive(UUID uuid, byte[] data) {
         return null;
     }
 
     class TimeSyncReqReceiver extends BroadcastReceiver {
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public final void onReceive(Context context, Intent intent) {
             updateTime();
         }
     }
