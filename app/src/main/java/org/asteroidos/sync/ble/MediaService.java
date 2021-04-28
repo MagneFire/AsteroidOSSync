@@ -40,6 +40,7 @@ import com.maxmpz.poweramp.player.PowerampAPIHelper;
 
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
+import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.io.IOException;
@@ -108,6 +109,7 @@ public class MediaService implements IBleService,  MediaSessionManager.OnActiveS
                 mMediaController.unregisterCallback(mMediaCallback);
             } catch(IllegalArgumentException ignored) {}
             Log.d(TAG, "MediaController removed");
+            mMediaController = null;
         }
         mMediaController = null;
     }

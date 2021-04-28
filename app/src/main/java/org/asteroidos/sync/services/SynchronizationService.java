@@ -160,7 +160,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         editor.apply();
     }
 
-
     final void handleUpdate() {
         if (mDevice != null) {
             try {
@@ -386,8 +385,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public void handleBattery(AsteroidBleManager.BatteryLevelEvent battery) {
         Log.d(TAG, "handleBattery: " + battery.battery + "%");
         batteryPercentage = battery.battery;
+        try {
+            replyTo.send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
-
 
     static private class SynchronizationHandler extends Handler {
         private SynchronizationService mService;
