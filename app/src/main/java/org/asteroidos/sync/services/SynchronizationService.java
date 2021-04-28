@@ -45,6 +45,7 @@ import org.asteroidos.sync.R;
 import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.ble.IBleService;
+import org.asteroidos.sync.ble.IService;
 import org.asteroidos.sync.ble.MediaService;
 import org.asteroidos.sync.ble.NotificationService;
 import org.asteroidos.sync.ble.ScreenshotService;
@@ -84,17 +85,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private int NOTIFICATION = 2725;
     private int mState = STATUS_DISCONNECTED;
     private Messenger replyTo;
-    private ScreenshotService mScreenshotService;
-    private WeatherService mWeatherService;
-    private NotificationService mNotificationService;
-    private MediaService mMediaService;
-    private TimeService mTimeService;
-    private SilentModeService silentModeService;
     private SharedPreferences mPrefs;
     private AsteroidBleManager mBleMngr;
     public int batteryPercentage = 0;
 
     List<IBleService> bleServices;
+    List<IService> nonBleServices;
 
     final void handleConnect() {
         if (mBleMngr == null) return;
@@ -112,22 +108,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                 .retry(3, 200)
                 .done(device1 -> {
                     Log.d(TAG, "Connected to " + device1.getName());
-
                 })
                 .fail((device2, error) -> {
                     Log.e(TAG, "Failed to connect to " + device.getName() +
                             " with error code: " + error);
                 })
                 .enqueue();
-
-        mNotificationService = new NotificationService(getApplicationContext(), this);
-         /*mWeatherService = new WeatherService(getApplicationContext(), mDevice);
-         mNotificationService = new NotificationService(getApplicationContext(), mDevice);
-         mScreenshotService = new ScreenshotService(getApplicationContext(), mDevice);
-         mTimeService = new TimeService(getApplicationContext(), mDevice);*/
-        //mScreenshotService = new ScreenshotService(getApplicationContext(), this);
-        //mTimeService = new TimeService(getApplicationContext(), this);
-        silentModeService = new SilentModeService(getApplicationContext());
 
     }
 
@@ -139,8 +125,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         }
         mBleMngr.abort();
         mBleMngr.disconnect().enqueue();
-
-        silentModeService.unsync();
     }
 
     final void handleSetDevice(BluetoothDevice device) {
@@ -237,7 +221,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public final void onDeviceConnected(@NonNull BluetoothDevice device) {
         mState = STATUS_CONNECTED;
         updateNotification();
-
     }
 
     @Override
@@ -249,6 +232,9 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public final void onDeviceReady(@NonNull BluetoothDevice device) {
         mState = STATUS_CONNECTED;
         updateNotification();
+        for(IService service: nonBleServices){
+            service.sync();
+        }
     }
 
     @Override
@@ -262,11 +248,16 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         mState = STATUS_DISCONNECTED;
         updateNotification();
 
+        for(IService service: nonBleServices){
+            service.unsync();
+        }
     }
 
     @Override
     public void onCreate() {
         bleServices = new ArrayList<>();
+        nonBleServices = new ArrayList<>();
+
         mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -297,14 +288,15 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
              */
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
-            /*
-            silentModeService = new SilentModeService(getApplicationContext());
-             */
-            mMediaService = new MediaService(getApplicationContext(), this);
-            mNotificationService = new NotificationService(getApplicationContext(), this);
-            mWeatherService = new WeatherService(getApplicationContext(), this);
-            mScreenshotService = new ScreenshotService(getApplicationContext(), this);
-            mTimeService = new TimeService(getApplicationContext(), this);
+
+            // Register Services
+            nonBleServices.add(new SilentModeService(getApplicationContext()));
+
+            new MediaService(getApplicationContext(), this);
+            new NotificationService(getApplicationContext(), this);
+            new WeatherService(getApplicationContext(), this);
+            new ScreenshotService(getApplicationContext(), this);
+            new TimeService(getApplicationContext(), this);
         }
 
         updateNotification();
@@ -370,6 +362,9 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         SharedPreferences.Editor editor = mPrefs.edit();
         if (mState != STATUS_DISCONNECTED) {
             for (IBleService service : bleServices){
+                service.unsync();
+            }
+            for(IService service: nonBleServices){
                 service.unsync();
             }
             mBleMngr.disconnect().enqueue();

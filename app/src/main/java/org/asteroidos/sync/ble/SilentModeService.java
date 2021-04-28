@@ -41,7 +41,7 @@ public class SilentModeService implements SharedPreferences.OnSharedPreferenceCh
     }
 
     @Override
-    public void sync() {
+    public final void sync() {
         notificationPref = prefs.getBoolean(PREF_RINGER, false);
 
         if (notificationPref){
@@ -53,7 +53,7 @@ public class SilentModeService implements SharedPreferences.OnSharedPreferenceCh
     }
 
     @Override
-    public void unsync(){
+    public final void unsync(){
         notificationPref = prefs.getBoolean(PREF_RINGER, false);
         if (notificationPref) {
             int origRingerMode = prefs.getInt(PREF_ORIG_RINGER, AudioManager.RINGER_MODE_NORMAL);
@@ -62,7 +62,7 @@ public class SilentModeService implements SharedPreferences.OnSharedPreferenceCh
     }
 
     @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+    public final void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         notificationPref = prefs.getBoolean(PREF_RINGER, false);
         if (notificationPref){
             am.setRingerMode(AudioManager.RINGER_MODE_SILENT);
