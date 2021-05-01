@@ -60,7 +60,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import no.nordicsemi.android.ble.observer.ConnectionObserver;
 
-
 public class SynchronizationService extends Service implements IAsteroidDevice, ConnectionObserver {
     public static final String TAG = SynchronizationService.class.toString();
     public static final int MSG_CONNECT = 1;
@@ -81,7 +80,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     final Messenger mMessenger = new Messenger(new SynchronizationHandler(this));
     public BluetoothGatt gatt;
     private NotificationManager mNM;
-    private int NOTIFICATION = 2725;
+    private final int NOTIFICATION = 2725;
     private int mState = STATUS_DISCONNECTED;
     private Messenger replyTo;
     private SharedPreferences mPrefs;
@@ -92,7 +91,10 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     List<IService> nonBleServices;
 
     final void handleConnect() {
-        if (mBleMngr == null) return;
+        if (mBleMngr == null) {
+            mBleMngr = new AsteroidBleManager(getApplicationContext(), SynchronizationService.this);
+            mBleMngr.setConnectionObserver(this);
+        }
         if (mState == STATUS_CONNECTED || mState == STATUS_CONNECTING) return;
 
         mPrefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
@@ -113,7 +115,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                             " with error code: " + error);
                 })
                 .enqueue();
-
     }
 
     final void handleDisconnect() {
@@ -277,25 +278,20 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         String defaultDevMacAddr = mPrefs.getString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");
         String defaultLocalName = mPrefs.getString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
 
-
-        if (!defaultDevMacAddr.isEmpty()) {
-            /*
-            if (!mBleMngr.hasDevice(defaultDevMacAddr))
-                mBleMngr.newDevice(defaultDevMacAddr, defaultLocalName);
-
-            mDevice = mBleMngr.getDevice(defaultDevMacAddr);
-            mDevice.setListener_State(SynchronizationService.this);
-
-
-             */
+        if(mBleMngr == null){
             mBleMngr = new AsteroidBleManager(getApplicationContext(), SynchronizationService.this);
-            mBleMngr.setConnectionObserver(this);;
+            mBleMngr.setConnectionObserver(this);
+        }
 
+        if (!(defaultDevMacAddr.equals(""))) {
             mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(defaultDevMacAddr);
+        }
 
-            // Register Services
+        if(nonBleServices.isEmpty())
             nonBleServices.add(new SilentModeService(getApplicationContext()));
 
+        if (bleServices.isEmpty()){
+            // Register Services
             new MediaService(getApplicationContext(), this);
             new NotificationService(getApplicationContext(), this);
             new WeatherService(getApplicationContext(), this);
