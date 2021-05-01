@@ -85,7 +85,7 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     private Messenger replyTo;
     private SharedPreferences mPrefs;
     private AsteroidBleManager mBleMngr;
-    public int batteryPercentage = 0;
+    public int batteryPercentage = 100;
 
     List<IConnectivityService> bleServices;
     List<IService> nonBleServices;
@@ -374,11 +374,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     public void handleBattery(AsteroidBleManager.BatteryLevelEvent battery) {
         Log.d(TAG, "handleBattery: " + battery.battery + "%");
         batteryPercentage = battery.battery;
-        try {
-            replyTo.send(Message.obtain(null, MSG_SET_BATTERY_PERCENTAGE, batteryPercentage, 0));
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
     }
 
     static private class SynchronizationHandler extends Handler {
@@ -406,7 +401,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-                    mService.handleUpdate();
                     break;
                 case MSG_SET_DEVICE:
                     mService.handleSetDevice((BluetoothDevice) msg.obj);

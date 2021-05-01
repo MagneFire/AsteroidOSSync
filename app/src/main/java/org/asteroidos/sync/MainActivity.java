@@ -312,6 +312,14 @@ public class MainActivity extends AppCompatActivity implements DeviceListFragmen
     private void handleSetStatus(int status) {
         if (mDetailFragment != null) {
             mDetailFragment.setStatus(status);
+            if (status == SynchronizationService.STATUS_CONNECTED) {
+                try {
+                    Message batteryMsg = Message.obtain(null, SynchronizationService.MSG_REQUEST_BATTERY_LIFE);
+                    batteryMsg.replyTo = mDeviceDetailMessenger;
+                    mSyncServiceMessenger.send(batteryMsg);
+                } catch (RemoteException ignored) {
+                }
+            }
             mStatus = status;
         }
     }
