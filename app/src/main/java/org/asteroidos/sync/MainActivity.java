@@ -44,8 +44,6 @@ import no.nordicsemi.android.support.v18.scanner.ScanSettings;
 
 import static android.os.ParcelUuid.fromString;
 
-@SuppressWarnings("deprecation")
-// Before upgrading to SweetBlue 3.0, we don't have an alternative to the deprecated StateListener
 public class MainActivity extends AppCompatActivity implements DeviceListFragment.OnDefaultDeviceSelectedListener,
         DeviceListFragment.OnScanRequestedListener, DeviceDetailFragment.OnDefaultDeviceUnselectedListener,
         DeviceDetailFragment.OnConnectRequestedListener, DeviceDetailFragment.OnAppSettingsClickedListener,

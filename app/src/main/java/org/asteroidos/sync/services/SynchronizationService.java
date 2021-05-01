@@ -152,22 +152,14 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         }
     }
 
-    final void unsyncServices(){
-        for (IService service: bleServices){
-            service.unsync();
-        }
-        for (IService service: nonBleServices){
-            service.unsync();
-        }
+    final public void unsyncServices(){
+        bleServices.forEach(IService::unsync);
+        nonBleServices.forEach(IService::unsync);
     }
 
-    final void syncServices(){
-        for (IService service: bleServices){
-            service.sync();
-        }
-        for (IService service: nonBleServices){
-            service.sync();
-        }
+    final public void syncServices(){
+        bleServices.forEach(IService::sync);
+        nonBleServices.forEach(IService::sync);
     }
 
     @Override
@@ -376,7 +368,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
         if (mState != STATUS_DISCONNECTED) {
             mBleMngr.disconnect().enqueue();
         }
-        bleServices.clear();
         mDevice = null;
         editor.putString(MainActivity.PREFS_DEFAULT_LOC_NAME, "");
         editor.putString(MainActivity.PREFS_DEFAULT_MAC_ADDR, "");

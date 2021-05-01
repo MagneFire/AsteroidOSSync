@@ -158,7 +158,7 @@ public class AsteroidBleManager extends BleManager {
 
             // Let all services now that we are connected.
             try {
-                synchronizationService.getServices().forEach((IConnectivityService::sync));
+                synchronizationService.syncServices();
             } catch (Exception e){
                 e.printStackTrace();
             }
@@ -166,10 +166,10 @@ public class AsteroidBleManager extends BleManager {
 
         @Override
         protected final void onDeviceDisconnected() {
+            synchronizationService.unsyncServices();
             batteryCharacteristic = null;
             gattServices.clear();
             gattChars.clear();
-            synchronizationService.getServices().forEach((IConnectivityService::unsync));
             gattServices.clear();
             gattChars.clear();
         }
