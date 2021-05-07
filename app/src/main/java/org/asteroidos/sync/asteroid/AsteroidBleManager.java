@@ -15,11 +15,11 @@ import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import no.nordicsemi.android.ble.BleManager;
-import no.nordicsemi.android.ble.BuildConfig;
 import no.nordicsemi.android.ble.data.Data;
 
 public class AsteroidBleManager extends BleManager {
@@ -29,6 +29,8 @@ public class AsteroidBleManager extends BleManager {
     SynchronizationService synchronizationService;
     HashMap<BluetoothGattCharacteristic, IConnectivityService.Direction> gattChars;
     ArrayList<BluetoothGattService> gattServices;
+    public HashMap<UUID, IConnectivityService> recvCallbacks;
+    public HashMap<UUID, BluetoothGattCharacteristic> sendingCharacteristics;
 
     public AsteroidBleManager(@NonNull final Context context, SynchronizationService syncService) {
         super(context);
@@ -38,11 +40,7 @@ public class AsteroidBleManager extends BleManager {
     }
 
     public final void send(UUID characteristic, byte[] data) {
-        gattChars.forEach((service, direction) -> {
-            if (service.getUuid().equals(characteristic)) {
-                writeCharacteristic(service, data).enqueue();
-            }
-        });
+        writeCharacteristic(sendingCharacteristics.get(characteristic), data).enqueue();
     }
 
     @NonNull
@@ -95,22 +93,19 @@ public class AsteroidBleManager extends BleManager {
             for (IConnectivityService service : synchronizationService.getServices()) {
 
                 BluetoothGattService bluetoothGattService = gatt.getService(service.getServiceUUID());
-                HashMap<UUID, IConnectivityService.Direction> characteristics = service.getCharacteristicUUIDs();
-
-                if (characteristics == null) {
-                    log(Log.DEBUG, "CHAR NULL! " + characteristics + " " + service.getServiceUUID());
-                    continue;
-                } else {
-                    log(Log.DEBUG, "CHAR " + characteristics + " " + service.getServiceUUID());
-                }
-
-                characteristics.forEach((uuid, direction) -> {
-                    BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
-                    gattChars.put(characteristic, direction);
-                    bluetoothGattService.addCharacteristic(characteristic);
+                List<UUID> sendUuids = null;
+                service.getCharacteristicUUIDs().forEach((uuid, direction) -> {
+                    if (direction == IConnectivityService.Direction.TO_WATCH)
+                        sendUuids.add(uuid);
+                    else
+                        recvCallbacks.put(uuid, service);
                 });
 
-                gattServices.add(bluetoothGattService);
+                for (UUID uuid: sendUuids) {
+                    BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
+                    sendingCharacteristics.put(uuid, characteristic);
+                    bluetoothGattService.addCharacteristic(characteristic);
+                }
             }
 
             supported = (batteryCharacteristic != null && notify);
@@ -133,16 +128,9 @@ public class AsteroidBleManager extends BleManager {
             readCharacteristic(batteryCharacteristic).with(((device, data) -> setBatteryLevel(data))).enqueue();
             enableNotifications(batteryCharacteristic).enqueue();
 
-            gattChars.forEach((characteristic, direction) -> {
-                System.out.println(characteristic.toString() + ": " + direction.name());
-                if (direction == IConnectivityService.Direction.FROM_WATCH) {
-                    setNotificationCallback(characteristic).with((device, data)
-                            -> informService(characteristic.getUuid(), data.getValue()));
-
-                    // sometimes crashes with null pointer or sends random data
-                    enableNotifications(characteristic).with((device, data)
-                            -> informService(characteristic.getUuid(), data.getValue())).enqueue();
-                }
+            recvCallbacks.forEach((characteristic, callback) -> {
+                setNotificationCallback(new BluetoothGattCharacteristic(characteristic, 0,0)).with((device, data) -> callback.onReceive(characteristic, data.getValue()));
+                enableNotifications(new BluetoothGattCharacteristic(characteristic, 0,0)).with((device, data) -> callback.onReceive(characteristic, data.getValue()));
             });
 
             // Let all services know that we are connected.
