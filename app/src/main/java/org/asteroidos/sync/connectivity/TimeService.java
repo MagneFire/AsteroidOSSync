@@ -119,9 +119,6 @@ public class TimeService implements IConnectivityService, SharedPreferences.OnSh
         return AsteroidUUIDS.TIME_SERVICE_UUID;
     }
 
-    @Override
-    public final void onReceive(UUID uuid, byte[] data) { }
-
     class TimeSyncReqReceiver extends BroadcastReceiver {
         @Override
         public final void onReceive(Context context, Intent intent) {

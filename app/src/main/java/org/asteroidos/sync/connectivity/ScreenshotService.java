@@ -87,6 +87,65 @@ public class ScreenshotService implements IConnectivityService {
             notificationChannel.setVibrationPattern(new long[]{0L});
             mNM.createNotificationChannel(notificationChannel);
         }
+
+        device.registerCallback(AsteroidUUIDS.SCREENSHOT_CONTENT, data -> {
+            if (data.length != 4){
+                mFirstNotify = false;
+            }
+            if(mFirstNotify) {
+                size = bytesToInt(data);
+                totalData = new byte[size];
+                mFirstNotify = false;
+                progress = 0;
+
+                processUpdate = Executors.newSingleThreadScheduledExecutor();
+                processUpdate.scheduleWithFixedDelay(() -> {
+                    NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
+                            .setContentTitle(mCtx.getText(R.string.screenshot))
+                            .setLocalOnly(true);
+
+                    notificationBuilder.setContentText(mCtx.getText(R.string.downloading));
+                    notificationBuilder.setSmallIcon(R.drawable.image_white);
+                    notificationBuilder.setProgress(size, progress, false);
+
+                    Notification notification = notificationBuilder.build();
+                    mNM.notify(NOTIFICATION, notification);
+                }, 0, 1, TimeUnit.SECONDS);
+            } else {
+                if(data.length + progress <= totalData.length)
+                    System.arraycopy(data, 0, totalData, progress, data.length);
+                progress += data.length;
+
+                if(size == progress) {
+                    processUpdate.shutdown();
+                    NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
+                            .setContentTitle(mCtx.getText(R.string.screenshot))
+                            .setLocalOnly(true);
+
+                    Uri fileName = null;
+                    try {
+                        fileName = createFile(totalData);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    notificationBuilder.setContentText(mCtx.getText(R.string.downloaded));
+                    notificationBuilder.setLargeIcon(BitmapFactory.decodeByteArray(totalData, 0, size));
+                    notificationBuilder.setSmallIcon(R.drawable.image_white);
+
+                    Intent notificationIntent = new Intent();
+                    notificationIntent.setAction(Intent.ACTION_VIEW);
+                    notificationIntent.setDataAndType(fileName, "image/*");
+                    notificationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    PendingIntent contentIntent = PendingIntent.getActivity(mCtx, 0, notificationIntent, 0);
+                    notificationBuilder.setContentIntent(contentIntent);
+                    mDownloading = false;
+
+                    Notification notification = notificationBuilder.build();
+                    mNM.notify(NOTIFICATION, notification);
+                }
+            }
+        });
     }
 
     @Override
@@ -181,71 +240,6 @@ public class ScreenshotService implements IConnectivityService {
     @Override
     public UUID getServiceUUID() {
         return AsteroidUUIDS.SCREENSHOT_SERVICE_UUID;
-    }
-
-    @Override
-    public void onReceive(UUID uuid, byte[] data) {
-        if(data == null || data.length == 0)
-            return;
-        System.out.println("onBLEREC: " + uuid + " Progress: " + data.length);
-        if (data.length != 4){
-            mFirstNotify = false;
-        }
-        if (uuid.equals(AsteroidUUIDS.SCREENSHOT_CONTENT)){
-                    if(mFirstNotify) {
-                        size = bytesToInt(data);
-                        totalData = new byte[size];
-                        mFirstNotify = false;
-                        progress = 0;
-
-                        processUpdate = Executors.newSingleThreadScheduledExecutor();
-                        processUpdate.scheduleWithFixedDelay(() -> {
-                            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
-                                    .setContentTitle(mCtx.getText(R.string.screenshot))
-                                    .setLocalOnly(true);
-
-                            notificationBuilder.setContentText(mCtx.getText(R.string.downloading));
-                            notificationBuilder.setSmallIcon(R.drawable.image_white);
-                            notificationBuilder.setProgress(size, progress, false);
-
-                            Notification notification = notificationBuilder.build();
-                            mNM.notify(NOTIFICATION, notification);
-                        }, 0, 1, TimeUnit.SECONDS);
-                    } else {
-                        if(data.length + progress <= totalData.length)
-                            System.arraycopy(data, 0, totalData, progress, data.length);
-                        progress += data.length;
-
-                        if(size == progress) {
-                            processUpdate.shutdown();
-                            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mCtx, NOTIFICATION_CHANNEL_ID)
-                                    .setContentTitle(mCtx.getText(R.string.screenshot))
-                                    .setLocalOnly(true);
-
-                            Uri fileName = null;
-                            try {
-                                fileName = createFile(totalData);
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
-                            }
-
-                            notificationBuilder.setContentText(mCtx.getText(R.string.downloaded));
-                            notificationBuilder.setLargeIcon(BitmapFactory.decodeByteArray(totalData, 0, size));
-                            notificationBuilder.setSmallIcon(R.drawable.image_white);
-
-                            Intent notificationIntent = new Intent();
-                            notificationIntent.setAction(Intent.ACTION_VIEW);
-                            notificationIntent.setDataAndType(fileName, "image/*");
-                            notificationIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            PendingIntent contentIntent = PendingIntent.getActivity(mCtx, 0, notificationIntent, 0);
-                            notificationBuilder.setContentIntent(contentIntent);
-                            mDownloading = false;
-
-                            Notification notification = notificationBuilder.build();
-                            mNM.notify(NOTIFICATION, notification);
-                        }
-                    }
-    }
     }
 
     class ScreenshotReqReceiver extends BroadcastReceiver {

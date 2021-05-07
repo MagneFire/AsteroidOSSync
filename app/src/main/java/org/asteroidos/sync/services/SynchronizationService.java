@@ -44,6 +44,7 @@ import org.asteroidos.sync.asteroid.AsteroidBleManager;
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.connectivity.IConnectivityService;
 import org.asteroidos.sync.connectivity.IService;
+import org.asteroidos.sync.connectivity.IServiceCallback;
 import org.asteroidos.sync.connectivity.MediaService;
 import org.asteroidos.sync.connectivity.NotificationService;
 import org.asteroidos.sync.connectivity.ScreenshotService;
@@ -53,6 +54,7 @@ import org.asteroidos.sync.connectivity.WeatherService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -175,13 +177,13 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     @Override
     public final void send(UUID characteristic, byte[] data, IConnectivityService service) {
         mBleMngr.send(characteristic, data);
-        System.out.println(characteristic.toString() + ": " + Arrays.toString(data));
+        Log.d(characteristic.toString(), Arrays.toString(data));
     }
 
     @Override
     public final void registerBleService(IConnectivityService service) {
-        Log.d(TAG, "registerBleService: " + service.getServiceUUID().toString());
         boolean success = bleServices.add(service);
+        mBleMngr.refresh();
         Log.d(TAG, "BLE Service registered: " + success + service.getServiceUUID());
     }
 
@@ -194,6 +196,16 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
             }
         }
 
+    }
+
+    @Override
+    public final void registerCallback(UUID characteristicUUID, IServiceCallback callback) {
+        mBleMngr.recvCallbacks.put(characteristicUUID, callback);
+    }
+
+    @Override
+    public final void unregisterCallback(UUID characteristicUUID) {
+        mBleMngr.recvCallbacks.remove(characteristicUUID);
     }
 
     @Override

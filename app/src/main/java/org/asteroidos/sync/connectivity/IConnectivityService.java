@@ -17,20 +17,4 @@ public interface IConnectivityService extends IService {
     public HashMap<UUID, Direction> getCharacteristicUUIDs();
 
     public UUID getServiceUUID();
-
-    /**
-     * <code>onReceive()</code> is called when data from the watch is received.
-     *
-     * <pre>
-     * &#064;Override
-     * <b>public void</b> onReceive(UUID uuid, byte[] data) {
-     *     // handle data
-     * }
-     * </pre>
-     *
-     * @param uuid {@link UUID} from {@link org.asteroidos.sync.utils.AsteroidUUIDS}
-     * @param data payload for the {@link IConnectivityService}
-     *
-     */
-    public void onReceive(UUID uuid, byte[] data);
 }

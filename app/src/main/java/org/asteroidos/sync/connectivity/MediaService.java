@@ -75,6 +75,80 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
         mDevice = device;
         mCtx = ctx;
         device.registerBleService(this);
+        device.registerCallback(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, (data) -> {
+            if (mMediaController != null) {
+                boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
+                        .equals(PowerampAPI.PACKAGE_NAME);
+
+                switch (data[0]) {
+                    case MEDIA_COMMAND_PREVIOUS:
+                        if(isPoweramp) {
+                            PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                    .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PREVIOUS));
+                        } else {
+                            mMediaController.getTransportControls().skipToPrevious();
+                        }
+                        break;
+                    case MEDIA_COMMAND_NEXT:
+                        if(isPoweramp) {
+                            PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                    .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.NEXT));
+                        } else {
+                            mMediaController.getTransportControls().skipToNext();
+                        }
+                        break;
+                    case MEDIA_COMMAND_PLAY:
+                        if(isPoweramp) {
+                            PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                    .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.RESUME));
+                        } else {
+                            mMediaController.getTransportControls().play();
+                        }
+                        break;
+                    case MEDIA_COMMAND_PAUSE:
+                        if (isPoweramp) {
+                            PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
+                                    .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PAUSE));
+                        } else {
+                            mMediaController.getTransportControls().pause();
+                        }
+                        break;
+                    case MEDIA_COMMAND_VOLUME:
+                        if (mMediaController.getPlaybackInfo() != null) {
+                            if (data[1] != mVolume) {
+                                int delta = Math.abs(mVolume - data[1]);
+                                int deviceDelta = 100 / mMediaController.getPlaybackInfo().getMaxVolume();
+                                // Change in volume is smaller than the device volume step (i.e. volume won't change)
+                                // Increase or decrease the volume by one step anyway to improve UX.
+                                if (delta < deviceDelta) {
+                                    if (data[1] > mVolume) {
+                                        mMediaController.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
+                                    } else if (data[1] < mVolume) {
+                                        mMediaController.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
+                                    }
+                                } else {
+                                    // Convert volume range (0-100) to Android device range(0-?).
+                                    int volume = (int) (mMediaController.getPlaybackInfo().getMaxVolume() * (data[1] / 100.0));
+                                    mMediaController.setVolumeTo(volume, AudioManager.FLAG_SHOW_UI);
+                                }
+                                // Set theoretical volume.
+                                mVolume = data[1];
+                            }
+                        }
+                        break;
+                }
+
+            } else if (data[0] != MEDIA_COMMAND_VOLUME){
+                Log.d(TAG, "No active media session, starting playback...");
+
+                try {
+                    Runtime runtime = Runtime.getRuntime();
+                    runtime.exec("input keyevent " + KeyEvent.KEYCODE_MEDIA_PLAY);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         mSettings = mCtx.getSharedPreferences(PREFS_NAME, 0);
     }
@@ -252,83 +326,5 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
     @Override
     public final UUID getServiceUUID() {
         return AsteroidUUIDS.MEDIA_SERVICE_UUID;
-    }
-
-    @Override
-    public final void onReceive(UUID uuid, byte[] data) {
-        if (!uuid.equals(AsteroidUUIDS.MEDIA_COMMANDS_CHAR) || data == null)
-            return;
-        if (mMediaController != null) {
-            boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
-                    .equals(PowerampAPI.PACKAGE_NAME);
-
-            switch (data[0]) {
-                case MEDIA_COMMAND_PREVIOUS:
-                    if(isPoweramp) {
-                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PREVIOUS));
-                    } else {
-                        mMediaController.getTransportControls().skipToPrevious();
-                    }
-                    break;
-                case MEDIA_COMMAND_NEXT:
-                    if(isPoweramp) {
-                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.NEXT));
-                    } else {
-                        mMediaController.getTransportControls().skipToNext();
-                    }
-                    break;
-                case MEDIA_COMMAND_PLAY:
-                    if(isPoweramp) {
-                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.RESUME));
-                    } else {
-                        mMediaController.getTransportControls().play();
-                    }
-                    break;
-                case MEDIA_COMMAND_PAUSE:
-                    if (isPoweramp) {
-                        PowerampAPIHelper.startPAService(mCtx, new Intent(PowerampAPI.ACTION_API_COMMAND)
-                                .putExtra(PowerampAPI.COMMAND, PowerampAPI.Commands.PAUSE));
-                    } else {
-                        mMediaController.getTransportControls().pause();
-                    }
-                    break;
-                case MEDIA_COMMAND_VOLUME:
-                    if (mMediaController.getPlaybackInfo() != null) {
-                        if (data[1] != mVolume) {
-                            int delta = Math.abs(mVolume - data[1]);
-                            int deviceDelta = 100 / mMediaController.getPlaybackInfo().getMaxVolume();
-                            // Change in volume is smaller than the device volume step (i.e. volume won't change)
-                            // Increase or decrease the volume by one step anyway to improve UX.
-                            if (delta < deviceDelta) {
-                                if (data[1] > mVolume) {
-                                    mMediaController.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI);
-                                } else if (data[1] < mVolume) {
-                                    mMediaController.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI);
-                                }
-                            } else {
-                                // Convert volume range (0-100) to Android device range(0-?).
-                                int volume = (int) (mMediaController.getPlaybackInfo().getMaxVolume() * (data[1] / 100.0));
-                                mMediaController.setVolumeTo(volume, AudioManager.FLAG_SHOW_UI);
-                            }
-                            // Set theoretical volume.
-                            mVolume = data[1];
-                        }
-                    }
-                    break;
-            }
-
-        } else if (data[0] != MEDIA_COMMAND_VOLUME){
-            Log.d(TAG, "No active media session, starting playback...");
-
-            try {
-                Runtime runtime = Runtime.getRuntime();
-                runtime.exec("input keyevent " + KeyEvent.KEYCODE_MEDIA_PLAY);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }

@@ -254,9 +254,6 @@ public class WeatherService implements IConnectivityService {
         return AsteroidUUIDS.WEATHER_SERVICE_UUID;
     }
 
-    @Override
-    public void onReceive(UUID uuid, byte[] data) { }
-
     class WeatherSyncReqReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {

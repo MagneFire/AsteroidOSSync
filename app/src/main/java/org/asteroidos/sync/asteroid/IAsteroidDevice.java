@@ -1,6 +1,7 @@
 package org.asteroidos.sync.asteroid;
 
 import org.asteroidos.sync.connectivity.IConnectivityService;
+import org.asteroidos.sync.connectivity.IServiceCallback;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +38,9 @@ public interface IAsteroidDevice {
 
     void registerBleService(IConnectivityService service);
     void unregisterBleService(UUID serviceUUID);
+    void registerCallback(UUID characteristicUUID, IServiceCallback callback);
+    void unregisterCallback(UUID characteristicUUID);
+
 
     IConnectivityService getServiceByUUID(UUID uuid);
     List<IConnectivityService> getServices();

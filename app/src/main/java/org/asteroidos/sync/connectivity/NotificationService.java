@@ -86,9 +86,6 @@ public class NotificationService implements IConnectivityService {
         return AsteroidUUIDS.NOTIFICATION_SERVICE_UUID;
     }
 
-    @Override
-    public void onReceive(UUID uuid, byte[] data) {}
-
     class NotificationReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
