@@ -45,6 +45,7 @@ public class NotificationService implements IConnectivityService {
     public NotificationService(Context ctx, IAsteroidDevice device) {
         this.mDevice = device;
         this.mCtx = ctx;
+        mNReceiver = new NotificationReceiver();
         device.registerBleService(this);
 
         UUIDs.add(AsteroidUUIDS.NOTIFICATION_SERVICE_UUID);
@@ -54,9 +55,6 @@ public class NotificationService implements IConnectivityService {
 
     @Override
     public void sync() {
-        //mDevice.enableNotify(AsteroidUUIDS.NOTIFICATION_FEEDBACK_CHAR);
-
-        mNReceiver = new NotificationReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction("org.asteroidos.sync.NOTIFICATION_LISTENER");
         mCtx.registerReceiver(mNReceiver, filter);
