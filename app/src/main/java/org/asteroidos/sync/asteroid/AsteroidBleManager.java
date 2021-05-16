@@ -1,5 +1,6 @@
 package org.asteroidos.sync.asteroid;
 
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -15,12 +16,15 @@ import org.asteroidos.sync.services.SynchronizationService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import no.nordicsemi.android.ble.BleManager;
+import no.nordicsemi.android.ble.callback.DataReceivedCallback;
+import no.nordicsemi.android.ble.callback.DataSentCallback;
 import no.nordicsemi.android.ble.data.Data;
 
 public class AsteroidBleManager extends BleManager {
@@ -42,16 +46,6 @@ public class AsteroidBleManager extends BleManager {
 
     public final void send(UUID characteristic, byte[] data) {
         writeCharacteristic(sendingCharacteristics.get(characteristic), data).enqueue();
-    }
-
-    public final void refresh() {
-        recvCallbacks.forEach((characteristic, callback) -> {
-            Log.d("REGISTERING", characteristic.toString() + " " + callback.toString());
-            BluetoothGattCharacteristic characteristic1 = new BluetoothGattCharacteristic(characteristic, BluetoothGattCharacteristic.PROPERTY_NOTIFY,BluetoothGattCharacteristic.PERMISSION_READ);
-            setNotificationCallback(characteristic1).with((device, data) -> callback.call(data.getValue()));
-            enableNotifications(characteristic1).with((device, data) -> callback.call(data.getValue())).enqueue();
-        });
-
     }
 
     @NonNull
@@ -106,16 +100,20 @@ public class AsteroidBleManager extends BleManager {
                 service.getCharacteristicUUIDs().forEach((uuid, direction) -> {
                     if (direction == IConnectivityService.Direction.TO_WATCH)
                         sendUuids.add(uuid);
-                    else
-                       recvCallbacks.forEach((uuid1, callback) -> recvCallbacks.put(uuid1, callback));
                 });
-                System.out.println(sendUuids.toString());
+                Log.d(TAG, "UUID " + sendUuids);
 
                 for (UUID uuid: sendUuids) {
                     BluetoothGattCharacteristic characteristic = bluetoothGattService.getCharacteristic(uuid);
                     sendingCharacteristics.put(uuid, characteristic);
                     bluetoothGattService.addCharacteristic(characteristic);
                 }
+                recvCallbacks.forEach((characteristic, callback) -> {
+                    // bluetoothGattService is not available outside this function, so move this code back here. TODO find an alternative way?
+                    BluetoothGattCharacteristic characteristic1 = bluetoothGattService.getCharacteristic(characteristic);
+                    setNotificationCallback(characteristic1).with((device, data) -> callback.call(data.getValue()));
+                    enableNotifications(characteristic1).with((device, data) -> callback.call(data.getValue())).enqueue();
+                });
             }
 
             supported = (batteryCharacteristic != null && notify);
@@ -150,8 +148,6 @@ public class AsteroidBleManager extends BleManager {
         protected final void onDeviceDisconnected() {
             synchronizationService.unsyncServices();
             batteryCharacteristic = null;
-            gattServices.clear();
-            gattChars.clear();
             gattServices.clear();
             gattChars.clear();
         }
