@@ -413,7 +413,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-                    mService.handleUpdate();
                     break;
                 case MSG_SET_DEVICE:
                     mService.handleSetDevice((BluetoothDevice) msg.obj);
