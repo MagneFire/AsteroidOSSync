@@ -14,7 +14,7 @@ public interface IConnectivityService extends IService {
         TO_WATCH
     }
 
-    public HashMap<UUID, Direction> getCharacteristicUUIDs();
+    HashMap<UUID, Direction> getCharacteristicUUIDs();
 
-    public UUID getServiceUUID();
+    UUID getServiceUUID();
 }
