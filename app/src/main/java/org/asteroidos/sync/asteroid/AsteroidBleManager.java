@@ -32,7 +32,6 @@ public class AsteroidBleManager extends BleManager {
     @Nullable
     public BluetoothGattCharacteristic batteryCharacteristic;
     SynchronizationService synchronizationService;
-    HashMap<BluetoothGattCharacteristic, IConnectivityService.Direction> gattChars;
     ArrayList<BluetoothGattService> gattServices;
     public HashMap<UUID, IServiceCallback> recvCallbacks;
     public HashMap<UUID, BluetoothGattCharacteristic> sendingCharacteristics;
@@ -149,7 +148,6 @@ public class AsteroidBleManager extends BleManager {
             synchronizationService.unsyncServices();
             batteryCharacteristic = null;
             gattServices.clear();
-            gattChars.clear();
         }
     }
 }
