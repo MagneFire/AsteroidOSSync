@@ -76,6 +76,7 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
         mCtx = ctx;
         device.registerBleService(this);
         device.registerCallback(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, (data) -> {
+            if (data == null) return;
             if (mMediaController != null) {
                 boolean isPoweramp = mSettings.getString(PREFS_MEDIA_CONTROLLER_PACKAGE, PREFS_MEDIA_CONTROLLER_PACKAGE_DEFAULT)
                         .equals(PowerampAPI.PACKAGE_NAME);

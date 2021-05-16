@@ -89,6 +89,7 @@ public class ScreenshotService implements IConnectivityService {
         }
 
         device.registerCallback(AsteroidUUIDS.SCREENSHOT_CONTENT, data -> {
+            if (data == null) return;
             if (data.length != 4){
                 mFirstNotify = false;
             }
