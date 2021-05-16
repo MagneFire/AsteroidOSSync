@@ -177,13 +177,12 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
     @Override
     public final void send(UUID characteristic, byte[] data, IConnectivityService service) {
         mBleMngr.send(characteristic, data);
-        Log.d(characteristic.toString(), Arrays.toString(data));
+        Log.d(TAG, characteristic.toString() + " " + Arrays.toString(data));
     }
 
     @Override
     public final void registerBleService(IConnectivityService service) {
         boolean success = bleServices.add(service);
-        mBleMngr.refresh();
         Log.d(TAG, "BLE Service registered: " + success + service.getServiceUUID());
     }
 
@@ -195,12 +194,11 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
                 Log.d(TAG, "BLE Service unregistered: " + service.getServiceUUID());
             }
         }
-
     }
 
     @Override
     public final void registerCallback(UUID characteristicUUID, IServiceCallback callback) {
-        mBleMngr.recvCallbacks.put(characteristicUUID, callback);
+        mBleMngr.recvCallbacks.putIfAbsent(characteristicUUID, callback);
     }
 
     @Override
