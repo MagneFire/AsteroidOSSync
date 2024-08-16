@@ -39,7 +39,7 @@ android {
                 srcDir("src/main/lib/powerampapi/poweramp_api_lib/res/")
             }
             jniLibs {
-                srcDir("/work/android-root/lib")
+                srcDir("/tmp/android-root/lib")
             }
         }
     }

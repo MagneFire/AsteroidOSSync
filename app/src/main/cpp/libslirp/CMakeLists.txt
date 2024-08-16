@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(libslirp)
 
+link_directories(/tmp/android-root/lib/${CMAKE_ANDROID_ARCH_ABI})
+include_directories(/tmp/android-root/include /tmp/android-root/include/glib-2.0/ /tmp/android-root/lib/${CMAKE_ANDROID_ARCH_ABI}/glib-2.0/include/)
+set(ENV{PKG_CONFIG_PATH} /tmp/android-root/lib/${CMAKE_ANDROID_ARCH_ABI}/pkgconfig)
+
 add_library(slirp STATIC
         src/arp_table.c
         src/bootp.c
