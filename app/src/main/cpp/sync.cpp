@@ -1,16 +1,34 @@
 #include <jni.h>
-#include <stdlib.h>
-//#include <arpa/inet.h>
+#include <cstdlib>
+#include <android/log.h>
 
 #include "libslirp/src/libvdeslirp.h"
 
 extern "C" {
 
+#define LOG_TAG "libslirp"
+
+#define GET_MYSLIRP(env, thisObject)                \
+    reinterpret_cast<struct vdeslirp *>(            \
+        env->GetLongField(                          \
+            thisObject,                             \
+            env->GetFieldID(                        \
+                env->GetObjectClass(thisObject),    \
+                "mySlirp",                          \
+                "J")))
+
 JNIEXPORT void JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_initNative
         (JNIEnv* env, jobject thisObject, jint mtu) {
 
+    printf("initNative called\r\n");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "initNative called\r\n");
+    auto myslirp = GET_MYSLIRP(env, thisObject);
+
+    if (myslirp != nullptr) {
+        __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Already initialized!\r\n");
+        return;
+    }
     SlirpConfig slirpcfg;
-    struct vdeslirp *myslirp;
     vdeslirp_init(&slirpcfg, VDE_INIT_DEFAULT);
     slirpcfg.if_mtu = mtu;
 
@@ -24,18 +42,11 @@ JNIEXPORT void JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_initNa
     env->SetLongField(thisObject, fid, reinterpret_cast<jlong>(myslirp));
 }
 
-#define GET_MYSLIRP(env, thisObject)                \
-    reinterpret_cast<struct vdeslirp *>(            \
-        env->GetLongField(                          \
-            thisObject,                             \
-            env->GetFieldID(                        \
-                env->GetObjectClass(thisObject),    \
-                "mySlirp",                          \
-                "J")))
-
 JNIEXPORT void JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_finalizeNative
         (JNIEnv* env, jobject thisObject) {
 
+    printf("finalizeNative called\r\n");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "finalizeNative called\r\n");
     auto mySlirp = GET_MYSLIRP(env, thisObject);
 
     if (mySlirp == nullptr) {
@@ -50,7 +61,9 @@ JNIEXPORT void JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_finali
 JNIEXPORT jlong JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeRecv
         (JNIEnv* env, jobject thisObject, jobject dbb, jlong offset, jlong count) {
 
+    printf("vdeRecv called\r\n");
     void *buf = reinterpret_cast<char *>(env->GetDirectBufferAddress(dbb)) + offset;
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "vdeRecv called: %p %ld\r\n", buf, count);
     return vdeslirp_recv(GET_MYSLIRP(env, thisObject), buf, count);
 }
 
@@ -58,12 +71,15 @@ JNIEXPORT jlong JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeSe
         (JNIEnv* env, jobject thisObject, jobject dbb, jlong offset, jlong count) {
 
     void *buf = reinterpret_cast<char *>(env->GetDirectBufferAddress(dbb)) + offset;
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "vdeSend called: %p %ld\r\n", buf, count);
     return vdeslirp_send(GET_MYSLIRP(env, thisObject), buf, count);
 }
 
 JNIEXPORT jobject JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_getVdeFd
         (JNIEnv* env, jobject thisObject) {
 
+    printf("getVdeFd called\r\n");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "getVdeFd called\r\n");
     auto fd = vdeslirp_fd(GET_MYSLIRP(env, thisObject));
 
     const auto class_fdesc = env->FindClass("java/io/FileDescriptor");
@@ -78,6 +94,8 @@ JNIEXPORT jobject JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_get
 
 JNIEXPORT jint JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeAddUnixFwd
         (JNIEnv* env, jobject thisObject, jstring path, jstring ip, jint port) {
+    printf("vdeAddUnixFwd called\r\n");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "vdeAddUnixFwd called\r\n");
     const char *c_path = env->GetStringUTFChars(path, nullptr);
     const char *c_ip = env->GetStringUTFChars(ip, nullptr);
 
@@ -92,6 +110,8 @@ JNIEXPORT jint JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeAdd
 
 JNIEXPORT jint JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeAddFwd
         (JNIEnv* env, jobject thisObject, jboolean udp, jstring hostip, jint hostport, jstring ip, jint port) {
+    printf("vdeAddFwd called\r\n");
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "vdeAddFwd called\r\n");
     const char *c_hostip = env->GetStringUTFChars(hostip, nullptr);
     const char *c_ip = env->GetStringUTFChars(ip, nullptr);
 

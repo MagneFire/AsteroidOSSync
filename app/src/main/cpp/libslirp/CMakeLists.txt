@@ -45,5 +45,7 @@ find_package(PkgConfig REQUIRED)
 
 pkg_check_modules(GLIB REQUIRED IMPORTED_TARGET glib-2.0)
 
+target_compile_definitions(slirp PRIVATE SLIRP_DEBUG=1)
+
 target_include_directories(slirp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(slirp PUBLIC PkgConfig::GLIB)
