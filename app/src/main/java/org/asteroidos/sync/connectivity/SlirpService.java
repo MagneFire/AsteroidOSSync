@@ -19,31 +19,20 @@
 package org.asteroidos.sync.connectivity;
 
 import android.content.Context;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
 import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructPollfd;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
 import org.asteroidos.sync.asteroid.IAsteroidDevice;
-import org.asteroidos.sync.dbus.IDBusConnectionCallback;
-import org.asteroidos.sync.dbus.IDBusConnectionProvider;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
-import org.freedesktop.dbus.DBusConnection;
-import org.freedesktop.dbus.exceptions.DBusException;
 
 import java.io.FileDescriptor;
 import java.nio.ByteBuffer;
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.function.Consumer;
 
-public class SlirpService implements IConnectivityService, IDBusConnectionProvider {
+public class SlirpService implements IConnectivityService {
 
     private final IAsteroidDevice mDevice;
 
@@ -51,60 +40,15 @@ public class SlirpService implements IConnectivityService, IDBusConnectionProvid
 
     private final Thread slirpThread;
 
-    private final HandlerThread dBusHandlerThread;
-
-    private final Handler dBusHandler;
-
     private volatile int mtu;
 
     private final ByteBuffer rx = ByteBuffer.allocateDirect(1500);
 
     private final ByteBuffer tx = ByteBuffer.allocateDirect(1500);
-    private DBusConnection dBusConnection = null;
-
-    private Consumer<IDBusConnectionCallback> dBusConnectionRunnable = null;
-
 
     public SlirpService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
-
-        dBusHandlerThread = new HandlerThread("D-Bus Connection");
-        dBusHandlerThread.start();
-        dBusHandler = new Handler(dBusHandlerThread.getLooper()) {
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                if (dBusConnection != null) {
-                    Log.i("SlirpService", "D-Bus already connected");
-                    return;
-                }
-                Log.i("SlirpService", "D-Bus connecting");
-
-                try {
-                    dBusConnection = DBusConnection.getConnection("tcp:host=127.0.0.1,bind=*,port=55556,family=ipv4");
-                    try {
-                        Log.i("SlirpService", "D-Bus connection acquired: " + dBusConnection.getAddress().toString());
-                    } catch (ParseException e) {
-                        Log.i("SlirpService", "D-Bus connection acquired");
-                    }
-                } catch (DBusException e) {
-                    Log.e("SlirpService", "Failed to establish a D-Bus connection", e);
-                }
-            }
-        };
-
-        dBusConnectionRunnable = dBusConnectionCallback -> {
-            final Message message = new Message();
-            dBusHandler.sendMessage(message);
-
-            try {
-                dBusConnectionCallback.handleConnection(dBusConnection);
-            } catch (DBusException e) {
-                Log.e("SlirpService", "D-Bus error", e);
-            } catch (Throwable e) {
-                Log.w("SlirpService", "Runtime error in D-Bus callback", e);
-            }
-        };
 
         slirpThread = new Thread(() -> {
             FileDescriptor fd = getVdeFd();
@@ -177,9 +121,6 @@ public class SlirpService implements IConnectivityService, IDBusConnectionProvid
 
     @Override
     public void sync() {
-        Log.i("SlirpService", "SYNC");
-        final Message message = new Message();
-        dBusHandler.sendMessage(message);
     }
 
     @Override
@@ -207,15 +148,6 @@ public class SlirpService implements IConnectivityService, IDBusConnectionProvid
     @Override
     public UUID getServiceUUID() {
         return AsteroidUUIDS.SLIRP_SERVICE_UUID;
-    }
-
-    public void acquireDBusConnection(IDBusConnectionCallback dBusConnectionCallback) {
-        dBusHandler.post(() -> dBusConnectionRunnable.accept(dBusConnectionCallback));
-    }
-
-    @Override
-    public void acquireDBusConnectionLater(IDBusConnectionCallback dBusConnectionCallback, long delay) {
-        dBusHandler.postDelayed(() -> dBusConnectionRunnable.accept(dBusConnectionCallback), delay);
     }
 
     @SuppressWarnings({"unused", "FieldMayBeFinal"}) // used internally by the JNI part

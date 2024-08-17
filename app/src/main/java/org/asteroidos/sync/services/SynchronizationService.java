@@ -53,7 +53,6 @@ import org.asteroidos.sync.connectivity.SilentModeService;
 import org.asteroidos.sync.connectivity.SlirpService;
 import org.asteroidos.sync.connectivity.TimeService;
 import org.asteroidos.sync.connectivity.WeatherService;
-import org.asteroidos.sync.dbus.DBusNotificationService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -294,7 +293,6 @@ public class SynchronizationService extends Service implements IAsteroidDevice, 
 
         if (nonBleServices.isEmpty()) {
             nonBleServices.add(new SilentModeService(getApplicationContext()));
-            nonBleServices.add(new DBusNotificationService(getApplicationContext(), slirpService));
         }
 
         handleConnect();
