@@ -31,6 +31,8 @@ import java.io.FileDescriptor;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SlirpService implements IConnectivityService {
 
@@ -38,48 +40,18 @@ public class SlirpService implements IConnectivityService {
 
     private final Context mCtx;
 
-    private final Thread slirpThread;
-
     private volatile int mtu;
 
     private final ByteBuffer rx = ByteBuffer.allocateDirect(1500);
 
     private final ByteBuffer tx = ByteBuffer.allocateDirect(1500);
+    Lock lock = new ReentrantLock();
 
     public SlirpService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
 
-        slirpThread = new Thread(() -> {
-            FileDescriptor fd = getVdeFd();
-            StructPollfd pollfd = new StructPollfd();
-            pollfd.fd = fd;
-            pollfd.events = (short) OsConstants.POLLIN;
-            StructPollfd[] pollfds = new StructPollfd[] { pollfd };
-            while (true) {
-                try {
-                    if (Os.poll(pollfds, 1500) == 0) {
-                        continue;
-                    }
-
-                    synchronized (SlirpService.this) {
-                        rx.clear();
-                        long read = vdeRecv(rx, 0, mtu - 3);
-                        assert read <= (mtu - 3);
-                        if (read > 0) {
-                            Log.d("SlirpService", "Received (slirp -> BLE) " + read + " bytes");
-                            byte[] data = new byte[(int) read];
-                            rx.get(data);
-                            mDevice.send(AsteroidUUIDS.SLIRP_OUTGOING_CHAR, data, SlirpService.this);
-                        } else {
-                            Log.e("SlirpService", "Read error: " + read);
-                        }
-                    }
-                } catch (Exception e) {
-                    Log.e("SlirpService", "Poller exception", e);
-                }
-            }
-        });
+        Thread slirpThread = new Thread(this::slirpThread);
 
         mtu = mDevice.getMtu();
 
@@ -89,14 +61,50 @@ public class SlirpService implements IConnectivityService {
             resetMtu();
             Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
 
-            synchronized (SlirpService.this) {
+            if (lock.tryLock()) {
                 tx.clear();
                 tx.put(data);
                 vdeSend(tx, 0, data.length);
+                lock.unlock();
             }
+            Log.d("SlirpService", "Sent (BLE -> slirp) " + data.length + " bytes");
         });
 
         slirpThread.start();
+    }
+
+    private void slirpThread() {
+        FileDescriptor fd = getVdeFd();
+        StructPollfd pollfd = new StructPollfd();
+        pollfd.fd = fd;
+        pollfd.events = (short) OsConstants.POLLIN;
+        StructPollfd[] pollfds = new StructPollfd[]{pollfd};
+        while (true) {
+            try {
+                if (Os.poll(pollfds, 1500) == 0) {
+                    continue;
+                }
+
+                Log.d("SlirpService", "Receive enter");
+                if (lock.tryLock()) {
+                    rx.clear();
+                    long read = vdeRecv(rx, 0, mtu - 3);
+                    assert read <= (mtu - 3);
+                    if (read > 0) {
+                        Log.d("SlirpService", "Received (slirp -> BLE) " + read + " bytes");
+                        byte[] data = new byte[(int) read];
+                        rx.get(data);
+                        mDevice.send(AsteroidUUIDS.SLIRP_OUTGOING_CHAR, data, SlirpService.this);
+                    } else {
+                        Log.e("SlirpService", "Read error: " + read);
+                    }
+                    lock.unlock();
+                }
+                Log.d("SlirpService", "Receive leave");
+            } catch (Exception e) {
+                Log.e("SlirpService", "Poller exception", e);
+            }
+        }
     }
 
     private void startNative(int mtu) {
@@ -108,14 +116,17 @@ public class SlirpService implements IConnectivityService {
     }
 
     private void resetMtu() {
-        synchronized (SlirpService.this) {
-            int newMtu = mDevice.getMtu();
-            if (mtu != newMtu) {
-                mtu = newMtu;
-
+        int newMtu = mDevice.getMtu();
+        if (mtu != newMtu) {
+            Log.d("SlirpService", "Native enter");
+            if (lock.tryLock()) {
                 finalizeNative();
                 startNative(mtu - 3);
+
+                mtu = newMtu;
             }
+            lock.unlock();
+            Log.d("SlirpService", "Native leave");
         }
     }
 
