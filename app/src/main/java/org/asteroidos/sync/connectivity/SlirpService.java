@@ -123,7 +123,7 @@ public class SlirpService implements IConnectivityService, IDBusConnectionProvid
                         long read = vdeRecv(rx, 0, mtu - 3);
                         assert read <= (mtu - 3);
                         if (read > 0) {
-                            Log.d("SlirpService", "Received " + read + " bytes");
+                            Log.d("SlirpService", "Received (slirp -> BLE) " + read + " bytes");
                             byte[] data = new byte[(int) read];
                             rx.get(data);
                             mDevice.send(AsteroidUUIDS.SLIRP_OUTGOING_CHAR, data, SlirpService.this);
@@ -143,6 +143,7 @@ public class SlirpService implements IConnectivityService, IDBusConnectionProvid
 
         mDevice.registerCallback(AsteroidUUIDS.SLIRP_INCOMING_CHAR, data -> {
             resetMtu();
+            Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
 
             synchronized (SlirpService.this) {
                 tx.clear();
