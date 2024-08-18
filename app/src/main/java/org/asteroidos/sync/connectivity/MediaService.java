@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class MediaService implements IConnectivityService,  MediaSessionManager.OnActiveSessionsChangedListener {
@@ -243,9 +244,10 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
             url = String.format("http://%s:%d/%s", ipAddress, port, java.util.UUID.randomUUID());
         }
         public void setImage(Bitmap image) {
-            if (this.image == image) {
+            if (this.image == image || image == null) {
                 return;
             }
+            Log.d(TAG, "New album!" + image);
 
             this.image = image;
 
@@ -256,8 +258,8 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
             }
 
             ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-            Bitmap scaledImage = Bitmap.createScaledBitmap(image, 32, 32, false);
-            scaledImage.compress(Bitmap.CompressFormat.JPEG, 50, ostream);
+            Bitmap scaledImage = Bitmap.createScaledBitmap(image, 128, 128, false);
+            scaledImage.compress(Bitmap.CompressFormat.JPEG, 80, ostream);
             jpegImage = ostream.toByteArray();
             setUrl();
         }
@@ -329,17 +331,20 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
             return result;
         }
 
+        String prevUrl = null;
         @Override
         public void onMetadataChanged(MediaMetadata metadata) {
             super.onMetadataChanged(metadata);
-
             if (metadata != null) {
                 Bitmap a = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
                 mAlbumArtServer.setImage(a);
                 byte[] url = mAlbumArtServer.getUrl().getBytes();
-                mDevice.send(AsteroidUUIDS.MEDIA_ALBUM_URL_CHAR,
-                        url,
-                        MediaService.this);
+                if (!Objects.equals(mAlbumArtServer.getUrl(), prevUrl)) {
+                    mDevice.send(AsteroidUUIDS.MEDIA_ALBUM_URL_CHAR,
+                            url,
+                            MediaService.this);
+                    prevUrl =  mAlbumArtServer.getUrl();
+                }
 
                 mDevice.send(AsteroidUUIDS.MEDIA_ARTIST_CHAR,
                         getTextAsBytes(metadata, MediaMetadata.METADATA_KEY_ARTIST),
