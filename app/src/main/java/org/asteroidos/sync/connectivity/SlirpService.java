@@ -58,7 +58,7 @@ public class SlirpService implements IConnectivityService {
         startNative(mtu - 3);
 
         mDevice.registerCallback(AsteroidUUIDS.SLIRP_INCOMING_CHAR, data -> {
-            resetMtu();
+//            resetMtu();
             Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
 
             if (lock.tryLock()) {
@@ -66,6 +66,8 @@ public class SlirpService implements IConnectivityService {
                 tx.put(data);
                 vdeSend(tx, 0, data.length);
                 lock.unlock();
+            } else {
+                Log.e("SlirpService", "Sending failure locking!!");
             }
             Log.d("SlirpService", "Sent (BLE -> slirp) " + data.length + " bytes");
         });
@@ -99,6 +101,8 @@ public class SlirpService implements IConnectivityService {
                         Log.e("SlirpService", "Read error: " + read);
                     }
                     lock.unlock();
+                } else {
+                    Log.e("SlirpService", "Read failure locking!!");
                 }
                 Log.d("SlirpService", "Receive leave");
             } catch (Exception e) {
@@ -124,8 +128,10 @@ public class SlirpService implements IConnectivityService {
                 startNative(mtu - 3);
 
                 mtu = newMtu;
+                lock.unlock();
+            } else {
+                Log.e("SlirpService", "Native lock fail");
             }
-            lock.unlock();
             Log.d("SlirpService", "Native leave");
         }
     }
