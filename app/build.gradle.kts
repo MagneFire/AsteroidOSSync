@@ -80,4 +80,5 @@ dependencies {
     implementation("no.nordicsemi.android.support.v18:scanner:1.6.0")
     implementation("no.nordicsemi.android:ble:2.8.0")
     implementation("com.google.guava:guava:33.1.0-android")
+    implementation("org.nanohttpd:nanohttpd:2.3.1")
 }

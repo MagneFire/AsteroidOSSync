@@ -46,6 +46,7 @@ public class AsteroidUUIDS {
     public static final UUID MEDIA_PLAYING_CHAR         = UUID.fromString("00007004-0000-0000-0000-00A57E401D05");
     public static final UUID MEDIA_COMMANDS_CHAR        = UUID.fromString("00007005-0000-0000-0000-00A57E401D05");
     public static final UUID MEDIA_VOLUME_CHAR          = UUID.fromString("00007006-0000-0000-0000-00A57E401D05");
+    public static final UUID MEDIA_ALBUM_URL_CHAR       = UUID.fromString("00007007-0000-0000-0000-00A57E401D05");
 
     // WeatherService
     public static final UUID WEATHER_SERVICE_UUID       = UUID.fromString("00008071-0000-0000-0000-00A57E401D05");

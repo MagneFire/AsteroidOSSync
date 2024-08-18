@@ -18,21 +18,28 @@
 
 package org.asteroidos.sync.connectivity;
 
+import static android.content.Context.WIFI_SERVICE;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.view.KeyEvent;
+import fi.iki.elonen.NanoHTTPD;
 
 import androidx.annotation.NonNull;
 
@@ -43,6 +50,8 @@ import org.asteroidos.sync.asteroid.IAsteroidDevice;
 import org.asteroidos.sync.services.NLService;
 import org.asteroidos.sync.utils.AsteroidUUIDS;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -71,10 +80,19 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
     private MediaSessionManager mMediaSessionManager;
 
     private int mVolume;
+    private AlbumArtServer mAlbumArtServer;
+    private Bitmap mAlbum;
 
     public MediaService(Context ctx, IAsteroidDevice device) {
         mDevice = device;
         mCtx = ctx;
+
+        try {
+            mAlbumArtServer = new AlbumArtServer();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         device.registerCallback(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, (data) -> {
             if (data == null) return;
             if (mMediaController != null) {
@@ -202,6 +220,63 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
         mDevice.send(AsteroidUUIDS.MEDIA_VOLUME_CHAR, data, MediaService.this);
     }
 
+    private class AlbumArtServer extends NanoHTTPD {
+        private String url;
+        private Bitmap image;
+        private byte[] jpegImage;
+
+        private final String ipAddress;
+
+        private int port;
+        public AlbumArtServer() throws IOException {
+            super((int)((Math.random() * (65535 - 1024)) + 1024));
+
+            start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
+
+            WifiManager wm = (WifiManager) mCtx.getSystemService(WIFI_SERVICE);
+            ipAddress = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+            port = getListeningPort();
+            setUrl();
+            Log.d(TAG, ipAddress);
+        }
+        private void setUrl() {
+            url = String.format("http://%s:%d/%s", ipAddress, port, java.util.UUID.randomUUID());
+        }
+        public void setImage(Bitmap image) {
+            if (this.image == image) {
+                return;
+            }
+
+            this.image = image;
+
+            if (image == null) {
+                jpegImage = null;
+                setUrl();
+                return;
+            }
+
+            ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+            Bitmap scaledImage = Bitmap.createScaledBitmap(image, 32, 32, false);
+            scaledImage.compress(Bitmap.CompressFormat.JPEG, 50, ostream);
+            jpegImage = ostream.toByteArray();
+            setUrl();
+        }
+
+        @Override
+        public Response serve(IHTTPSession session) {
+            if (jpegImage == null) {
+                return newFixedLengthResponse(NanoHTTPD.Response.Status.INTERNAL_ERROR, "text/plain", "");
+            }
+            ByteArrayInputStream istream = new ByteArrayInputStream(jpegImage);
+            Log.d(TAG, "Serving album request");
+
+            return newChunkedResponse(Response.Status.OK, "image/jpeg", istream);
+        }
+        public String getUrl() {
+            return url;
+        }
+    }
+
     private final ContentObserver mVolumeChangeObserver = new ContentObserver(new Handler()) {
         // The last value of volume send to the watch.
         private int reportedVolume;
@@ -259,6 +334,13 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
             super.onMetadataChanged(metadata);
 
             if (metadata != null) {
+                Bitmap a = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+                mAlbumArtServer.setImage(a);
+                byte[] url = mAlbumArtServer.getUrl().getBytes();
+                mDevice.send(AsteroidUUIDS.MEDIA_ALBUM_URL_CHAR,
+                        url,
+                        MediaService.this);
+
                 mDevice.send(AsteroidUUIDS.MEDIA_ARTIST_CHAR,
                         getTextAsBytes(metadata, MediaMetadata.METADATA_KEY_ARTIST),
                         MediaService.this);
@@ -321,6 +403,7 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
             mDevice.send(AsteroidUUIDS.MEDIA_ARTIST_CHAR, data, MediaService.this);
             mDevice.send(AsteroidUUIDS.MEDIA_ALBUM_CHAR, data, MediaService.this);
             mDevice.send(AsteroidUUIDS.MEDIA_TITLE_CHAR, data, MediaService.this);
+            mDevice.send(AsteroidUUIDS.MEDIA_ALBUM_URL_CHAR, data, MediaService.this);
         }
     }
 
@@ -333,6 +416,7 @@ public class MediaService implements IConnectivityService,  MediaSessionManager.
         chars.put(AsteroidUUIDS.MEDIA_PLAYING_CHAR, Direction.TO_WATCH);
         chars.put(AsteroidUUIDS.MEDIA_COMMANDS_CHAR, Direction.FROM_WATCH);
         chars.put(AsteroidUUIDS.MEDIA_VOLUME_CHAR, Direction.TO_WATCH);
+        chars.put(AsteroidUUIDS.MEDIA_ALBUM_URL_CHAR, Direction.TO_WATCH);
         return chars;
     }
 
