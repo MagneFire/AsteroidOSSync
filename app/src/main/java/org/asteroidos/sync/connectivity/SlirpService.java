@@ -31,6 +31,7 @@ import java.io.FileDescriptor;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -59,17 +60,32 @@ public class SlirpService implements IConnectivityService {
 
         mDevice.registerCallback(AsteroidUUIDS.SLIRP_INCOMING_CHAR, data -> {
 //            resetMtu();
-            Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
+//            Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
 
-            if (lock.tryLock()) {
-                tx.clear();
-                tx.put(data);
-                vdeSend(tx, 0, data.length);
-                lock.unlock();
-            } else {
-                Log.e("SlirpService", "Sending failure locking!!");
+            while (true) {
+                try {
+                    if (lock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                        tx.clear();
+                        tx.put(data);
+                        vdeSend(tx, 0, data.length);
+                        lock.unlock();
+                        break;
+                    } else {
+                        Log.e("SlirpService", "Sending failure locking!!");
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
-            Log.d("SlirpService", "Sent (BLE -> slirp) " + data.length + " bytes");
+//            if (lock.tryLock()) {
+//                tx.clear();
+//                tx.put(data);
+//                vdeSend(tx, 0, data.length);
+//                lock.unlock();
+//            } else {
+//                Log.e("SlirpService", "Sending failure locking!!");
+//            }
+//            Log.d("SlirpService", "Sent (BLE -> slirp) " + data.length + " bytes");
         });
 
         slirpThread.start();
@@ -87,24 +103,27 @@ public class SlirpService implements IConnectivityService {
                     continue;
                 }
 
-                Log.d("SlirpService", "Receive enter");
-                if (lock.tryLock()) {
-                    rx.clear();
-                    long read = vdeRecv(rx, 0, mtu - 3);
-                    assert read <= (mtu - 3);
-                    if (read > 0) {
-                        Log.d("SlirpService", "Received (slirp -> BLE) " + read + " bytes");
-                        byte[] data = new byte[(int) read];
-                        rx.get(data);
-                        mDevice.send(AsteroidUUIDS.SLIRP_OUTGOING_CHAR, data, SlirpService.this);
+//                Log.d("SlirpService", "Receive enter");
+                while (true) {
+                    if (lock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                        rx.clear();
+                        long read = vdeRecv(rx, 0, mtu - 3);
+                        assert read <= (mtu - 3);
+                        if (read > 0) {
+//                        Log.d("SlirpService", "Received (slirp -> BLE) " + read + " bytes");
+                            byte[] data = new byte[(int) read];
+                            rx.get(data);
+                            mDevice.send(AsteroidUUIDS.SLIRP_OUTGOING_CHAR, data, SlirpService.this);
+                        } else {
+                            Log.e("SlirpService", "Read error: " + read);
+                        }
+                        lock.unlock();
+                        break;
                     } else {
-                        Log.e("SlirpService", "Read error: " + read);
+                        Log.e("SlirpService", "Read failure locking!!");
                     }
-                    lock.unlock();
-                } else {
-                    Log.e("SlirpService", "Read failure locking!!");
                 }
-                Log.d("SlirpService", "Receive leave");
+//                Log.d("SlirpService", "Receive leave");
             } catch (Exception e) {
                 Log.e("SlirpService", "Poller exception", e);
             }
