@@ -115,6 +115,7 @@ public class SlirpService implements IConnectivityService {
         initNative(mtu - 14);
 
         vdeAddFwd(false, "0.0.0.0", 45722, "10.0.2.3", 22);
+        vdeAddFwd(false, "0.0.0.0", 45723, "10.0.2.3", 23);
         vdeAddFwd(false, "0.0.0.0", 55555, "10.0.2.3", 55555);
         vdeAddFwd(false, "0.0.0.0", 55556, "10.0.2.3", 55556);
     }
