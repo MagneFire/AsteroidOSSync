@@ -47,6 +47,17 @@ JNIEXPORT void JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_finali
     env->SetLongField(thisObject, fid, 0L);
 }
 
+JNIEXPORT void JNICALL
+Java_org_asteroidos_sync_connectivity_SlirpService_updateMtu(JNIEnv *env, jobject thisObject, jint mtu) {
+    auto mySlirp = GET_MYSLIRP(env, thisObject);
+
+    if (mySlirp == nullptr) {
+        return;
+    }
+
+    vdeslirp_setmtu(mySlirp, mtu);
+}
+
 JNIEXPORT jlong JNICALL Java_org_asteroidos_sync_connectivity_SlirpService_vdeRecv
         (JNIEnv* env, jobject thisObject, jobject dbb, jlong offset, jlong count) {
 
