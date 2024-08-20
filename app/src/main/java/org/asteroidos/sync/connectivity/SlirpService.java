@@ -55,11 +55,12 @@ public class SlirpService implements IConnectivityService {
         Thread slirpThread = new Thread(this::slirpThread);
 
         mtu = mDevice.getMtu();
+        Log.d("SlirpService", "SlirpInit " + mtu);
 
-        startNative(mtu - 3);
+        startNative(mtu);
 
         mDevice.registerCallback(AsteroidUUIDS.SLIRP_INCOMING_CHAR, data -> {
-//            resetMtu();
+            resetMtu();
 //            Log.d("SlirpService", "Sending (BLE -> slirp) " + data.length + " bytes");
 
             synchronized (lock) {
@@ -103,7 +104,7 @@ public class SlirpService implements IConnectivityService {
     }
 
     private void startNative(int mtu) {
-        initNative(mtu - 14);
+        initNative(mtu - 3);
 
         vdeAddFwd(false, "0.0.0.0", 45722, "10.0.2.3", 22);
         vdeAddFwd(false, "0.0.0.0", 45723, "10.0.2.3", 23);
@@ -116,8 +117,9 @@ public class SlirpService implements IConnectivityService {
         if (mtu != newMtu) {
             Log.d("SlirpService", "MTU updating " + mtu + " -> " + newMtu);
             synchronized (lock)  {
-                finalizeNative();
-                startNative(mtu - 3);
+                updateMtu(newMtu - 3);
+//                finalizeNative();
+//                startNative(newMtu - 3);
 
                 mtu = newMtu;
             }
@@ -166,6 +168,7 @@ public class SlirpService implements IConnectivityService {
     private native void initNative(int mtu);
 
     private native void finalizeNative();
+    private native void updateMtu(int mtu);
 
     private native long vdeRecv(ByteBuffer buffer, long offset, long count);
 
