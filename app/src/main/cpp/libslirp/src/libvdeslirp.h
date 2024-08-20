@@ -18,6 +18,7 @@ void vdeslirp_init(SlirpConfig *cfg, int flags);
 
 void vdeslirp_setvprefix(SlirpConfig *cfg, int prefix);
 void vdeslirp_setvprefix6(SlirpConfig *cfg, int prefix6);
+void vdeslirp_setmtu(struct vdeslirp *slirp, int mtu);
 
 struct vdeslirp *vdeslirp_open(SlirpConfig *cfg);
 ssize_t vdeslirp_send(struct vdeslirp *slirp, const void *buf, size_t count);

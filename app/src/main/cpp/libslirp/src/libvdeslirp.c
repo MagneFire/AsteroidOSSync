@@ -38,6 +38,10 @@
 
 #include "libslirp.h"
 
+#include "slirp.h"
+#include "if.h"
+#include <glib.h>
+
 //#define FUTURE_SLIRP_fWD_FEATURES
 #define JUMBOMTU 9014
 
@@ -467,6 +471,14 @@ void vdeslirp_setvprefix(SlirpConfig *cfg, int prefix) {
 		memmaskcpy(&cfg->vdhcp_start, &cfg->vhost, &cfg->vnetmask, sizeof(struct in_addr));
 	if (cfg->vnameserver.s_addr != inaddr_any.s_addr)
 		memmaskcpy(&cfg->vnameserver, &cfg->vhost, &cfg->vnetmask, sizeof(struct in_addr));
+}
+
+void vdeslirp_setmtu(struct vdeslirp *slirp, int mtu) {
+	Slirp *cfg = slirp->slirp;
+    g_return_if_fail(mtu >= IF_MTU_MIN || mtu == 0);
+    g_return_if_fail(mtu <= IF_MTU_MAX);
+
+	cfg->if_mtu = mtu;
 }
 
 void vdeslirp_setvprefix6(SlirpConfig *cfg, int prefix6) {
